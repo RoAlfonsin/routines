@@ -1,0 +1,184 @@
+{
+  "version": 2,
+  "hour_seconds": 3600,
+  "note": "One hour per day. Meditation blocks take their real length from the YouTube video at runtime; the main circuit plays a fixed number of rounds; the cool-down stretch absorbs whatever seconds remain so every day totals exactly 60:00. Move definitions live in pool.json.",
+  "sun_salutation": {
+    "name": "Sun Salutations",
+    "source": "Darebee · Greet the Day",
+    "url": "https://darebee.com/workouts/greet-the-day-workout.html",
+    "budget": 420,
+    "poses": [
+      { "name": "Mountain Pose", "sanskrit": "Tadasana", "sec": 3, "cue": "Stand tall, palms together at the heart." },
+      { "name": "Upward Salute", "sanskrit": "Urdhva Hastasana", "sec": 3, "cue": "Inhale, sweep the arms up and lengthen." },
+      { "name": "Standing Forward Bend", "sanskrit": "Uttanasana", "sec": 3, "cue": "Exhale, fold forward, soften the knees." },
+      { "name": "Lunge", "sanskrit": "Utthita Ashwa Sanchalanasana", "sec": 4, "cue": "Inhale, right leg back, chest open." },
+      { "name": "Downward-Facing Dog", "sanskrit": "Adho Mukha Shvanasana", "sec": 4, "cue": "Exhale, hips up and back, heels reaching down." },
+      { "name": "Plank", "sanskrit": "Phalakasana", "sec": 3, "cue": "Inhale forward to a long plank." },
+      { "name": "Four-Limbed Staff", "sanskrit": "Chaturanga Dandasana", "sec": 3, "cue": "Exhale, elbows back, lower halfway." },
+      { "name": "Upward-Facing Dog", "sanskrit": "Urdhva Mukha Shvanasana", "sec": 3, "cue": "Inhale, chest forward and up." },
+      { "name": "Downward-Facing Dog", "sanskrit": "Adho Mukha Shvanasana", "sec": 4, "cue": "Exhale, back to the dog." },
+      { "name": "Lunge", "sanskrit": "Utthita Ashwa Sanchalanasana", "sec": 4, "cue": "Inhale, right leg forward between the hands." },
+      { "name": "Standing Forward Bend", "sanskrit": "Uttanasana", "sec": 3, "cue": "Exhale, step together and fold." },
+      { "name": "Upward Salute", "sanskrit": "Urdhva Hastasana", "sec": 3, "cue": "Inhale, rise all the way up." },
+      { "name": "Mountain Pose", "sanskrit": "Tadasana", "sec": 2, "cue": "Exhale, hands to the heart. Begin the next round." }
+    ]
+  },
+  "warmup": {
+    "label": "Warm-Up · seated to standing",
+    "budget": 480,
+    "moves": [
+      { "ref": "neck-tilts", "work": 40, "rest": 8 },
+      { "ref": "neck-side-tilts", "work": 40, "rest": 8 },
+      { "ref": "shoulder-rolls", "work": 40, "rest": 8 },
+      { "ref": "chest-expansions", "work": 40, "rest": 8 },
+      { "ref": "spinal-twists", "work": 40, "rest": 8 },
+      { "ref": "arm-circles", "work": 40, "rest": 8 },
+      { "ref": "hip-rotations", "work": 40, "rest": 8 },
+      { "ref": "side-leg-raises-stand", "work": 40, "rest": 8 },
+      { "ref": "calf-raises", "work": 40, "rest": 8 },
+      { "ref": "march-steps", "work": 40, "rest": 8 }
+    ]
+  },
+  "cooldown": {
+    "label": "Cool-Down · stretch",
+    "budget": 300,
+    "absorb_slack": true,
+    "moves": [
+      { "ref": "cat-cow", "work": 40, "rest": 0 },
+      { "ref": "childs-pose", "work": 45, "rest": 0 },
+      { "ref": "seated-forward-fold", "work": 40, "rest": 0 },
+      { "ref": "quad-stretch", "work": 40, "rest": 0 },
+      { "ref": "chest-opener", "work": 30, "rest": 0 },
+      { "ref": "figure-four", "work": 40, "rest": 0 },
+      { "ref": "seated-twist", "work": 35, "rest": 0 },
+      { "ref": "neck-stretch", "work": 30, "rest": 0 }
+    ]
+  },
+  "days": [
+    {
+      "id": "mon", "day": "Monday", "focus": "Full-body strength",
+      "arrive": { "video": "inpok4MKVLM", "channel": "Goodful", "title": "5-Minute Meditation You Can Do Anywhere", "nominal": 317 },
+      "settle": { "video": "Xl_B45DpMLU", "channel": "Calm", "title": "Daily Calm · Self Soothing", "nominal": 608 },
+      "main": {
+        "label": "Strong Start", "source": "Darebee", "url": "https://darebee.com/workouts/strong-start-workout.html",
+        "rounds": 4, "rest_between_rounds": 60,
+        "moves": [
+          { "ref": "split-lunges", "work": 40, "rest": 20 },
+          { "ref": "cossack-squats", "work": 40, "rest": 20 },
+          { "ref": "shoulder-taps", "work": 30, "rest": 20 },
+          { "ref": "plank-leg-raises", "work": 40, "rest": 20 },
+          { "ref": "plank-rotations", "work": 40, "rest": 20 }
+        ]
+      }
+    },
+    {
+      "id": "tue", "day": "Tuesday", "focus": "Glutes and legs",
+      "arrive": { "video": "WUASVHlfXeI", "channel": "Declutter The Mind", "title": "Short 5 Minute Guided Meditation for Mindfulness", "nominal": 350 },
+      "settle": { "video": "O_StSJFUkiA", "channel": "Moffitt Cancer Center", "title": "10-minute Seated Meditation", "nominal": 613 },
+      "main": {
+        "label": "Bubble Butt", "source": "Darebee", "url": "https://darebee.com/workouts/bubble-butt-workout.html",
+        "rounds": 4, "rest_between_rounds": 60,
+        "moves": [
+          { "ref": "squats", "work": 40, "rest": 20 },
+          { "ref": "push-back-kicks", "work": 40, "rest": 20 },
+          { "ref": "lunge-step-ups", "work": 40, "rest": 20 },
+          { "ref": "single-leg-bridges", "work": 40, "rest": 20 },
+          { "ref": "glute-bridges", "work": 40, "rest": 20 }
+        ]
+      }
+    },
+    {
+      "id": "wed", "day": "Wednesday", "focus": "Core",
+      "arrive": { "video": "ssss7V1_eyA", "channel": "Great Meditation", "title": "5 Minute Mindfulness Meditation", "nominal": 315 },
+      "settle": { "video": "jjGs4osVJW4", "channel": "Little Light Meditations", "title": "Take a Seat · 10-minute sitting meditation", "nominal": 611 },
+      "main": {
+        "label": "Total Core", "source": "Darebee", "url": "https://darebee.com/workouts/total-core-workout.html",
+        "rounds": 4, "rest_between_rounds": 45,
+        "moves": [
+          { "ref": "high-knees", "work": 40, "rest": 15 },
+          { "ref": "climber-taps", "work": 40, "rest": 15 },
+          { "ref": "plank-walkouts", "work": 40, "rest": 15 },
+          { "ref": "dead-bugs", "work": 40, "rest": 15 },
+          { "ref": "flutter-kicks", "work": 40, "rest": 15 },
+          { "ref": "side-plank-crunches", "work": 40, "rest": 15 }
+        ]
+      }
+    },
+    {
+      "id": "thu", "day": "Thursday", "focus": "Arms and back",
+      "arrive": { "video": "i50ZAs7v9es", "channel": "The Honest Guys", "title": "5 Minute Calming Meditation", "nominal": 325 },
+      "settle": { "video": "QH2pzjpeOu8", "channel": "Brahm Centre", "title": "10-min Seated Body Scan · Angie Chew", "nominal": 625 },
+      "main": {
+        "label": "Arms & Back", "source": "Darebee", "url": "https://darebee.com/workouts/arms-and-back-workout.html",
+        "rounds": 3, "rest_between_rounds": 45,
+        "moves": [
+          { "ref": "side-bicep-extensions", "work": 40, "rest": 15 },
+          { "ref": "bicep-extensions", "work": 40, "rest": 15 },
+          { "ref": "shoulder-taps", "work": 40, "rest": 15 },
+          { "ref": "plank-rotations", "work": 40, "rest": 15 },
+          { "ref": "superman-stretches", "work": 40, "rest": 15 },
+          { "ref": "reverse-angels", "work": 40, "rest": 15 },
+          { "ref": "prone-reverse-flys", "work": 40, "rest": 15 },
+          { "ref": "w-extensions", "work": 40, "rest": 15 }
+        ]
+      }
+    },
+    {
+      "id": "fri", "day": "Friday", "focus": "Cardio, low impact",
+      "arrive": { "video": "lGhRpYzGCzI", "channel": "Great Meditation", "title": "5 Minute Every Day Guided Meditation", "nominal": 317 },
+      "settle": { "video": "2L00t5VeVjQ", "channel": "Mark Williams", "title": "10 Min Sitting Meditation", "nominal": 590 },
+      "main": {
+        "label": "Outlast + Last Life", "source": "Darebee", "url": "https://darebee.com/workouts/outlast-workout.html",
+        "rounds": 3, "rest_between_rounds": 45,
+        "moves": [
+          { "ref": "march-steps", "work": 40, "rest": 15 },
+          { "ref": "squats", "work": 40, "rest": 15 },
+          { "ref": "bicep-extensions", "work": 40, "rest": 15 },
+          { "ref": "step-jacks", "work": 40, "rest": 15 },
+          { "ref": "high-knees", "work": 40, "rest": 15 },
+          { "ref": "knee-to-elbows", "work": 40, "rest": 15 },
+          { "ref": "overhead-punches", "work": 40, "rest": 15 },
+          { "ref": "straight-punches", "work": 40, "rest": 15 }
+        ]
+      }
+    },
+    {
+      "id": "sat", "day": "Saturday", "focus": "Mobility, full body",
+      "arrive": { "video": "zUOGeHJjkU8", "channel": "ABC Science", "title": "Guided Meditation For Calming The Mind", "nominal": 296 },
+      "settle": { "video": "Xx6gj6RLRdg", "channel": "Declutter The Mind", "title": "10 Minute Guided Meditation for Inner Peace", "nominal": 655 },
+      "main": {
+        "label": "Low Impact", "source": "Darebee", "url": "https://darebee.com/workouts/low-impact-workout.html",
+        "rounds": 3, "rest_between_rounds": 45,
+        "moves": [
+          { "ref": "march-steps", "work": 40, "rest": 15 },
+          { "ref": "calf-raises", "work": 40, "rest": 15 },
+          { "ref": "shoulder-taps", "work": 40, "rest": 15 },
+          { "ref": "alt-arm-leg-raises", "work": 40, "rest": 15 },
+          { "ref": "leg-extensions", "work": 40, "rest": 15 },
+          { "ref": "side-leg-extensions", "work": 40, "rest": 15 },
+          { "ref": "glute-bridges", "work": 40, "rest": 15 },
+          { "ref": "flutter-kicks", "work": 40, "rest": 15 }
+        ]
+      }
+    },
+    {
+      "id": "sun", "day": "Sunday", "focus": "Recovery",
+      "arrive": { "video": "inpok4MKVLM", "channel": "Goodful", "title": "5-Minute Meditation You Can Do Anywhere", "nominal": 317 },
+      "settle": { "video": "FGO8IWiusJo", "channel": "Boho Beautiful Yoga", "title": "Guided Morning Meditation · 10 Minutes", "nominal": 635 },
+      "main": {
+        "label": "Gentle Recovery Flow", "source": "Darebee (pool)", "url": "https://darebee.com/workouts/low-impact-workout.html",
+        "rounds": 3, "rest_between_rounds": 45,
+        "moves": [
+          { "ref": "cat-cow", "work": 40, "rest": 15 },
+          { "ref": "childs-pose", "work": 40, "rest": 15 },
+          { "ref": "glute-bridges", "work": 40, "rest": 15 },
+          { "ref": "dead-bugs", "work": 40, "rest": 15 },
+          { "ref": "side-leg-raises-stand", "work": 40, "rest": 15 },
+          { "ref": "seated-forward-fold", "work": 40, "rest": 15 },
+          { "ref": "figure-four", "work": 40, "rest": 15 },
+          { "ref": "neck-stretch", "work": 40, "rest": 15 }
+        ]
+      }
+    }
+  ]
+}
