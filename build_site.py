@@ -155,10 +155,11 @@ TEMPLATE = r"""<!DOCTYPE html>
   #musicbar.on{display:flex}
   #musicbar .nm{color:var(--dim)}
   #musicbar b{font-weight:600}
-  #musicbar .nm{flex:1;min-width:8em}
-  input[type=range]{flex:1;min-width:120px;width:auto;accent-color:var(--work)}
+  #musicbar .nm{white-space:nowrap;flex:0 0 auto}
+  #musicbar button{flex:0 0 auto}
+  input[type=range]{flex:1 1 auto;min-width:180px;width:auto;accent-color:var(--work)}
   #controls{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(6px,1vh,14px);margin-top:clamp(8px,1.4vh,18px)}
-  #controls button{font-size:clamp(13px,1.7vh,19px);padding:clamp(11px,1.8vh,22px) 4px}
+  #controls button{font-size:clamp(14px,1.9vh,22px);padding:clamp(12px,2vh,24px) 4px}
   #pauseBtn{grid-column:span 4;font-weight:800;background:#20304a;border-color:#39507a}
   /* music player must exist but stay out of the way */
   #musicHost{position:fixed;bottom:0;right:0;width:1px;height:1px;overflow:hidden;opacity:.01;pointer-events:none}
