@@ -136,14 +136,15 @@ TEMPLATE = r"""<!DOCTYPE html>
   #bar{display:flex;height:clamp(7px,1vh,13px);border-radius:99px;overflow:hidden;background:var(--line)}
   #bar i{height:100%}
   .topline{display:flex;justify-content:space-between;align-items:baseline;gap:16px;margin-top:clamp(6px,1.2vh,14px)}
-  #blockName{font-size:clamp(12px,1.7vh,19px);letter-spacing:.16em;text-transform:uppercase;color:var(--dim);font-weight:600}
-  #hourClock{font-variant-numeric:tabular-nums;color:var(--dim);font-size:clamp(12px,1.6vh,18px)}
+  #blockName{font-size:clamp(15px,2.3vh,28px);letter-spacing:.16em;text-transform:uppercase;color:var(--dim);font-weight:600}
+  #hourClock{font-variant-numeric:tabular-nums;color:#c3cddd;font-size:clamp(15px,2.2vh,26px);font-weight:600}
   #stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:0;gap:clamp(2px,.6vh,10px)}
   #clock{font-size:clamp(64px,20vh,300px);font-weight:800;line-height:.92;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
-  #moveName{font-size:clamp(22px,5.2vh,64px);font-weight:700;line-height:1.1}
-  #sub{color:var(--dim);font-size:clamp(12px,1.7vh,20px)}
-  #cue{color:var(--dim);font-size:clamp(13px,2vh,24px);max-width:34ch;margin-top:clamp(2px,.8vh,10px);min-height:1.3em}
-  #meta,#next{color:var(--dim);font-size:clamp(11px,1.5vh,17px)}
+  #moveName{font-size:clamp(26px,6.2vh,80px);font-weight:800;line-height:1.08;letter-spacing:-.01em}
+  #sub{color:#b9c4d4;font-size:clamp(15px,2.3vh,28px)}
+  #cue{color:#cdd6e4;font-size:clamp(16px,2.8vh,36px);max-width:38ch;margin-top:clamp(3px,1vh,14px);min-height:1.3em}
+  #meta,#next{color:#b9c4d4;font-size:clamp(14px,2.1vh,24px)}
+  #meta{margin-top:clamp(4px,1vh,12px)}
   #vidwrap{margin:clamp(4px,1vh,14px) 0;display:none}
   #vidwrap.on{display:block}
   iframe{width:100%;aspect-ratio:16/9;border:0;border-radius:14px;background:#000;max-height:52vh}
@@ -154,10 +155,11 @@ TEMPLATE = r"""<!DOCTYPE html>
   #musicbar.on{display:flex}
   #musicbar .nm{color:var(--dim)}
   #musicbar b{font-weight:600}
-  input[type=range]{width:clamp(80px,12vw,190px);accent-color:var(--work)}
-  #controls{display:grid;grid-template-columns:repeat(5,1fr);gap:clamp(6px,1vh,14px);margin-top:clamp(8px,1.4vh,18px)}
+  #musicbar .nm{flex:1;min-width:8em}
+  input[type=range]{flex:1;min-width:120px;width:auto;accent-color:var(--work)}
+  #controls{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(6px,1vh,14px);margin-top:clamp(8px,1.4vh,18px)}
   #controls button{font-size:clamp(13px,1.7vh,19px);padding:clamp(11px,1.8vh,22px) 4px}
-  #pauseBtn{grid-column:span 5;font-weight:800;background:#20304a;border-color:#39507a}
+  #pauseBtn{grid-column:span 4;font-weight:800;background:#20304a;border-color:#39507a}
   /* music player must exist but stay out of the way */
   #musicHost{position:fixed;bottom:0;right:0;width:1px;height:1px;overflow:hidden;opacity:.01;pointer-events:none}
 
