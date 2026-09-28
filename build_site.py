@@ -12,7 +12,7 @@ import shutil
 import sys
 
 HERE = pathlib.Path(__file__).resolve().parent
-DIST = HERE / "dist"
+DIST = HERE / "docs"
 
 POOL = json.loads((HERE / "pool.json").read_text(encoding="utf-8"))
 R = json.loads((HERE / "routines.json").read_text(encoding="utf-8"))

@@ -34,8 +34,8 @@ and the hour still lands on 60:00.
 - `routines.json` — the seven days: block budgets, circuits, round counts, and which
   meditation video each day uses.
 - `build_site.py` — joins the two, **verifies every day totals 60:00**, and writes
-  `dist/index.html`.
-- `dist/index.html` — the built site. Self-contained, no build step at runtime.
+  `docs/index.html`.
+- `docs/index.html` — the built site. Self-contained, no build step at runtime.
 
 ## Rebuild
 
@@ -65,7 +65,7 @@ paste is also the backup if you move machines.
 
 ## Deploy
 
-Served by GitHub Pages from the `/dist` folder on `main`. Push and Pages republishes.
+Served by GitHub Pages from the `/docs` folder on `main`. Push and Pages republishes.
 
 ## Attribution
 
