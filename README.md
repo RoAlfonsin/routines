@@ -1,20 +1,22 @@
 # The Hour — daily exercise + meditation routines
 
-One hour a day, seven days a week. Every session runs in the same order and always
-totals exactly **60:00**:
+One hour a day, seven days a week. Same order every day:
 
-| block | length | what |
+| block | nominal | what |
 |---|---|---|
-| Arrive | ~5 min | seated guided meditation pulled from YouTube |
-| Warm-Up | 8:00 | seated → standing, bottom-up: neck, shoulders, spine, hips, legs |
-| Sun Salutations | 7:00 | 10 rounds of the full 13-pose Surya Namaskar |
-| Main routine | ~23 min | the only block that changes day to day |
-| Cool-Down | ~5 min | stretching; absorbs the slack so the hour is exact |
-| Settle | ~10 min | seated guided meditation from YouTube |
+| Arrive | ~5 min | seated guided meditation (YouTube) |
+| Warm-Up | 8:04 | 11 moves, seated → standing, up the body: neck, shoulders, spine, arms, wrists, hips, legs |
+| Sun Salutations | ~11 min | **follow-along class** (YouTube) — watch and copy the rhythm |
+| Main routine | 22–24 min | the only block that changes day to day |
+| Cool-Down | 5:00 | 8 stretches |
+| Settle | ~10 min | seated guided meditation (YouTube) |
 
-The meditations are embedded with YouTube's official player and driven by the timer —
-the real video length is read at runtime, so if you swap a video everything rebalances
-and the hour still lands on 60:00.
+Three blocks are YouTube videos and take their **real** length at runtime, so the hour runs
+61:45–64:00 rather than exactly 60:00. Timing is deliberately nominal, with about ±1½
+minutes of slack per block. No block is forced onto an exact total.
+
+**Music** (lofi girl) plays under the three timed blocks and stops automatically while a
+video block is on, then picks up again.
 
 ## The week
 
@@ -26,50 +28,60 @@ and the hour still lands on 60:00.
 - **Sat** Low Impact — mobility, full body (Darebee)
 - **Sun** Gentle Recovery Flow — recovery
 
+## Sound
+
+Transitions use synthesised singing-bowl tones rather than beeps: a low bowl (288 Hz) to
+mark rest and block changes, a mid bowl (432 Hz) for the cool-down and the 3-second
+warning, and a high bowl (528 Hz) to start each exercise. Sessions open and close with a
+gong and a three-strike chime.
+
 ## Files
 
-- `pool.json` — the move pool. 55 home bodyweight moves tagged by pattern, body
-  position, impact and level. 45 come from real Darebee cards, 10 are standard
-  stretches. This is where you add exercises.
-- `routines.json` — the seven days: block budgets, circuits, round counts, and which
-  meditation video each day uses.
-- `build_site.py` — joins the two, **verifies every day totals 60:00**, and writes
-  `docs/index.html`.
-- `docs/index.html` — the built site. Self-contained, no build step at runtime.
+- `pool.json` — the move pool: 55 home bodyweight moves tagged by pattern, body position,
+  impact and level. 45 come from real Darebee cards; the rest are standard stretches.
+- `routines.json` — the seven days, the shared sun class, the music bed, block lengths.
+- `build_site.py` — joins them, prints the block-length table, writes `docs/index.html`.
+- `.github/workflows/deploy.yml` — builds and deploys to GitHub Pages on every push.
 
-## Rebuild
+## Rebuild and deploy
 
 ```bash
-cd ~/Projects/fitness && python3 build_site.py
+cd ~/Projects/fitness && python3 build_site.py     # local preview
+git add -A && git commit -m "..." && git push      # CI builds and publishes
 ```
 
-The build refuses to emit a day that doesn't add up to 60:00, and prints the per-block
-breakdown for all seven days.
+Pages is served by a **GitHub Actions workflow**, not a branch folder, because the review
+webhook is injected at build time from the `HOUR_WEBHOOK` repository secret. It is never
+committed. Building locally without that variable simply makes the review button copy to
+the clipboard instead of posting.
+
+## Reviews
+
+After a session you rate the whole hour **and each block** 1–5, add a note, and hit **Send
+review** — it posts straight into the Discord thread Hermes watches, formatted so the week
+can be retuned from it:
+
+```
+📋 **Monday review — 2026-09-28**
+Overall ★★★☆☆ (3/5)
+Arrive: 2 · WarmUp: 4 · Sun: 1 · Main: 5 · CoolDown: 3 · Settle: 4
+_liked the circuit, sun class too fast_
+```
+
+Reviews are also kept in the browser's localStorage (device-local); **Reviews** on the menu
+shows the recent ones.
 
 ## Changing things
 
-- **Swap a meditation:** edit the `arrive`/`settle` block for a day in `routines.json`
-  and paste the YouTube video ID. Duration is measured at runtime, nothing else to
-  adjust.
-- **Change the main routine:** edit that day's `main.moves` (each entry is a `ref` into
-  `pool.json` plus `work`/`rest` seconds) and `rounds`. Rebuild; the build tells you if
-  it no longer fits.
-- **Add a move:** append it to `pool.json` with an `id`, then reference it by `ref`.
-
-## Ratings
-
-Rate any session 1–5 with a note. Ratings are stored in the browser's localStorage, so
-they live on the machine you trained on. **Copy all ratings** puts the JSON on your
-clipboard — paste it into the chat and the week gets retuned from the feedback. That
-paste is also the backup if you move machines.
-
-## Deploy
-
-Served by GitHub Pages from the `/docs` folder on `main`. Push and Pages republishes.
+- **Swap a meditation or the sun class:** change the `video` ID in `routines.json`
+  (`arrive`/`settle` per day, `sun` shared). Durations are measured at runtime.
+- **Swap the music:** change `music.video`.
+- **Change a main routine:** edit that day's `main.moves` (a `ref` into `pool.json` plus
+  `work`/`rest` seconds) and `rounds`.
+- **Add a move:** append to `pool.json` with a unique `id`, then reference it by `ref`.
 
 ## Attribution
 
-Routine structures and exercise names are drawn from [DAREBEE](https://darebee.com),
-a free donation-funded project — go read their cards, they are better than this
-summary. Cues and coaching text here are our own. The scraped source pages are kept
-locally in `.scratch/` and deliberately not published.
+Routine structures and exercise names come from [DAREBEE](https://darebee.com), a free
+donation-funded project. Cue text here is our own. Scraped source pages are kept in
+`.scratch/`, which is gitignored and never published.
