@@ -174,8 +174,10 @@ TEMPLATE = r"""<!DOCTYPE html>
     <div id="meta"></div>
     <div id="next"></div>
     <div id="videos">
-      <div class="vwrap" id="wrapArrive"><div id="vpArrive"></div><div class="vlink" id="linkArrive"></div></div>
-      <div class="vwrap" id="wrapSettle"><div id="vpSettle"></div><div class="vlink" id="linkSettle"></div></div>
+      <div class="vwrap" id="wrapArrive"><div id="vpArrive"></div>
+        <div class="vlink"><button id="playArrive" style="display:none">▶ Tap to play</button> <span id="linkArrive"></span></div></div>
+      <div class="vwrap" id="wrapSettle"><div id="vpSettle"></div>
+        <div class="vlink"><button id="playSettle" style="display:none">▶ Tap to play</button> <span id="linkSettle"></span></div></div>
     </div>
     <div id="controls">
       <button id="pauseBtn">Pause</button>
@@ -251,6 +253,24 @@ function loadYT(){
   const s=document.createElement("script"); s.src="https://www.youtube.com/iframe_api";
   s.onerror=()=>{ $("vstatus").textContent = "YouTube unavailable — meditations fall back to their nominal length and a link."; };
   document.head.appendChild(s);
+}
+
+/* Autoplay is not guaranteed: browsers block it unless the click that started the
+   session counts as user activation. Play, then check, then reveal a manual button. */
+function startVideo(which, day){
+  const p = which==="arrive" ? pArrive : pSettle;
+  const btn = which==="arrive" ? $("playArrive") : $("playSettle");
+  const lnk = which==="arrive" ? $("linkArrive") : $("linkSettle");
+  const meta = which==="arrive" ? day.arrive : day.settle;
+  lnk.innerHTML = '<a href="https://www.youtube.com/watch?v='+meta.video+'" target="_blank" rel="noopener">open on YouTube</a>';
+  btn.style.display="none";
+  const token = st.i;
+  if(p){ try{ p.unMute(); p.setVolume(85); p.playVideo(); }catch(e){} }
+  setTimeout(()=>{
+    if(st.i!==token || !p) return;
+    let s=-1; try{ s=p.getPlayerState(); }catch(e){}
+    if(s!==1 && s!==3){ btn.style.display="inline-block"; }
+  }, 2200);
 }
 
 /* ---------------- timeline ---------------- */
@@ -402,10 +422,11 @@ function enter(first){
   $("meta").textContent = s.count>1 ? ("move "+s.idx+" of "+s.count) : "";
   $("next").textContent = s.next ? ("next: "+s.next) : "";
   // videos
+  const day = currentDay();
   $("wrapArrive").classList.toggle("on", s.video==="arrive");
   $("wrapSettle").classList.toggle("on", s.video==="settle");
-  if(s.video==="arrive" && pArrive){ try{pArrive.unMute(); pArrive.setVolume(85); pArrive.playVideo();}catch(e){} }
-  if(s.video==="settle" && pSettle){ try{pSettle.unMute(); pSettle.setVolume(85); pSettle.playVideo();}catch(e){} }
+  if(s.video==="arrive") startVideo("arrive", day);
+  if(s.video==="settle") startVideo("settle", day);
   if(s.video!=="arrive" && pArrive){ try{pArrive.pauseVideo();}catch(e){} }
   if(s.video!=="settle" && pSettle){ try{pSettle.pauseVideo();}catch(e){} }
   if(first || s.kind!=="rest"){
@@ -523,6 +544,8 @@ $("stopBtn").onclick=()=>{ st.running=false; if(hb){clearInterval(hb);hb=null;}
   try{pArrive&&pArrive.pauseVideo();}catch(e){} try{pSettle&&pSettle.pauseVideo();}catch(e){}
   $("run").style.display="none"; $("menu").style.display="block"; };
 $("voiceTog").onchange=e=>{ voiceEnabled=e.target.checked; if(voiceEnabled) say("Voice on"); };
+$("playArrive").onclick=()=>{ try{pArrive.unMute(); pArrive.setVolume(85); pArrive.playVideo();}catch(e){} $("playArrive").style.display="none"; };
+$("playSettle").onclick=()=>{ try{pSettle.unMute(); pSettle.setVolume(85); pSettle.playVideo();}catch(e){} $("playSettle").style.display="none"; };
 
 selId = R.days[new Date().getDay()===0?6:new Date().getDay()-1].id;
 renderMenu();
