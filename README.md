@@ -7,12 +7,14 @@ One hour a day, seven days a week. Same order every day:
 | Arrive | ~5 min | seated guided meditation (YouTube) |
 | Warm-Up | 8:04 | 11 moves, seated → standing, up the body: neck, shoulders, spine, arms, wrists, hips, legs |
 | Sun Salutations | ~11 min | **follow-along class** (YouTube) — watch and copy the rhythm |
+| *Transition* | 0:15 | breathe, shake it out |
 | Main routine | 22–24 min | the only block that changes day to day |
+| *Transition* | 0:15 | catch your breath |
 | Cool-Down | 5:00 | 8 stretches |
-| Settle | ~10 min | seated guided meditation (YouTube) |
+| Settle | ~10 min | seated guided meditation (YouTube) — **the same one every day** |
 
 Three blocks are YouTube videos and take their **real** length at runtime, so the hour runs
-61:45–64:00 rather than exactly 60:00. Timing is deliberately nominal, with about ±1½
+61:45–64:25 rather than exactly 60:00. Timing is deliberately nominal, with about ±1½
 minutes of slack per block. No block is forced onto an exact total.
 
 **Music** (lofi girl) plays under the three timed blocks and stops automatically while a

@@ -23,7 +23,10 @@ R = json.loads((HERE / "routines.json").read_text(encoding="utf-8"))
 HOUR = R["hour_seconds"]
 TAIL = R["video_tail"]
 SUN = R["sun"]
+SETTLE = R["settle"]
+TR = R["transitions"]
 MUSIC = R["music"]
+TR_SECONDS = TR["after_sun"] + TR["before_cooldown"]
 REVIEW_THREAD = "1553973467496316948"
 
 
@@ -40,21 +43,23 @@ def blocks(day):
         "Sun Salutations": SUN["nominal"] + TAIL,
         day["main"]["label"]: main_cost(day["main"]),
         "Cool-Down": sum(m["work"] + m["rest"] for m in R["cooldown"]["moves"]),
-        "Settle": day["settle"]["nominal"] + TAIL,
+        "Settle": SETTLE["nominal"] + TAIL,
     }
 
 
 def audit():
     """Report only. Timing is nominal by design; warn if a day drifts far."""
     warnings = []
-    print(f"{'day':<4} {'arrive':>7} {'warm':>6} {'sun':>6} {'main':>6} {'cool':>6} {'settle':>7} {'TOTAL':>7} {'vs 60:00':>9}")
+    print(f"{'day':<4} {'arrive':>7} {'warm':>6} {'sun':>6} {'main':>6} {'cool':>6} {'settle':>7} "
+          f"{'trans':>6} {'TOTAL':>7} {'vs 60:00':>9}")
     for d in R["days"]:
         b = blocks(d)
-        tot = sum(b.values())
+        tot = sum(b.values()) + TR_SECONDS
         if abs(tot - HOUR) > 420:
             warnings.append(f"{d['id']}: total {tot}s is more than 7 minutes off an hour")
         print(f"{d['id']:<4} " + " ".join(f"{v//60}:{v%60:02d}".rjust(6) for v in list(b.values())[:-1])
               + f" {b['Settle']//60}:{b['Settle']%60:02d}".rjust(8)
+              + f" {TR_SECONDS}s".rjust(6)
               + f" {tot//60}:{tot%60:02d}".rjust(7) + f" {tot-HOUR:+5d}s".rjust(9))
     return warnings
 
@@ -249,7 +254,8 @@ TEMPLATE = r"""<!DOCTYPE html>
 <script>
 const DATA = __DATA__;
 const POOL = DATA.pool, R = DATA.routines, HOUR = R.hour_seconds, TAIL = R.video_tail;
-const SUN = R.sun, MUSIC = R.music, WARM = R.warmup, COOL = R.cooldown;
+const SUN = R.sun, SETTLE = R.settle, TR = R.transitions, MUSIC = R.music, WARM = R.warmup, COOL = R.cooldown;
+const TR_SECONDS = (TR.after_sun||0) + (TR.before_cooldown||0);
 const WEBHOOK = DATA.webhook, THREAD = DATA.thread;
 const $ = id => document.getElementById(id);
 const fmt = s => { s=Math.max(0,Math.ceil(s)); return Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); };
@@ -313,7 +319,7 @@ function prefetch(day){
   if(!pMain || dursFor===day.id) return;
   dursFor = day.id; durs = {arrive:null,sun:null,settle:null};
   try{ pMain.mute(); }catch(e){}
-  const list=[["arrive",day.arrive.video],["sun",SUN.video],["settle",day.settle.video]];
+  const list=[["arrive",day.arrive.video],["sun",SUN.video],["settle",SETTLE.video]];
   let k=0;
   const next=()=>{
     if(k>=list.length){
@@ -340,9 +346,10 @@ function mainCost(m){
 function plan(day){
   const arrive = (durs.arrive || day.arrive.nominal) + TAIL;
   const sun    = (durs.sun    || SUN.nominal) + TAIL;
-  const settle = (durs.settle || day.settle.nominal) + TAIL;
+  const settle = (durs.settle || SETTLE.nominal) + TAIL;
   const warm = sumMoves(WARM.moves), cool = sumMoves(COOL.moves), main = mainCost(day.main);
-  return {arrive, warm, sun, main, cool, settle, total: arrive+warm+sun+main+cool+settle};
+  return {arrive, warm, sun, main, cool, settle, tr:TR_SECONDS,
+          total: arrive+warm+sun+main+cool+settle+TR_SECONDS};
 }
 function buildTimeline(day){
   const p = plan(day), steps=[];
@@ -362,6 +369,11 @@ function buildTimeline(day){
               cue:"Follow along. Match your breath to hers — no timer, just rhythm.",
               dur:p.sun, video:"sun", round:1, rounds:1});
 
+  if(TR.after_sun>0)
+    steps.push({block:"Transition", kind:"rest", label:"Transition",
+                cue:"Shake out the sun salutations. "+TR.after_sun+" seconds, then the main routine.",
+                dur:TR.after_sun, round:1, rounds:1, music:true});
+
   const m = day.main;
   for(let r=1;r<=m.rounds;r++){
     m.moves.forEach((x,i)=>{
@@ -379,6 +391,11 @@ function buildTimeline(day){
                   next:"Round "+(r+1)+" · "+POOL[m.moves[0].ref].name, music:true});
   }
 
+  if(TR.before_cooldown>0)
+    steps.push({block:"Transition", kind:"rest", label:"Transition",
+                cue:"Catch your breath. "+TR.before_cooldown+" seconds, then the cool-down.",
+                dur:TR.before_cooldown, round:1, rounds:1, music:true});
+
   COOL.moves.forEach((x,i)=>{
     const mv=POOL[x.ref];
     steps.push({block:"Cool-Down", kind:"stretch", label:mv.name, cue:mv.cue, dur:x.work+x.rest,
@@ -386,7 +403,7 @@ function buildTimeline(day){
                 next: COOL.moves[i+1] ? POOL[COOL.moves[i+1].ref].name : "the closing meditation", music:true});
   });
 
-  V("Settle", day.settle.title, day.settle.channel, "Sit down again. Close your eyes and follow the voice.", p.settle, "settle");
+  V("Settle", SETTLE.title, SETTLE.channel, "Same closing meditation every day. Sit down, close your eyes, follow the voice.", p.settle, "settle");
   return steps;
 }
 
@@ -396,6 +413,7 @@ const currentDay = () => R.days.find(d=>d.id===selId) || R.days[0];
 
 function colorFor(name,day){
   if(name==="Arrive"||name==="Settle") return COL.meditation;
+  if(name==="Transition") return "var(--dim)";
   if(name==="Sun Salutations") return COL.yoga;
   if(name==="Warm-Up") return COL.warm;
   if(name==="Cool-Down") return COL.stretch;
@@ -403,7 +421,7 @@ function colorFor(name,day){
 }
 function descFor(name,day){
   if(name==="Arrive") return day.arrive.channel;
-  if(name==="Settle") return day.settle.channel;
+  if(name==="Settle") return SETTLE.channel+" · same every day";
   if(name==="Sun Salutations") return SUN.channel+" · follow-along class";
   if(name==="Warm-Up") return WARM.moves.length+" moves · seated to standing";
   if(name==="Cool-Down") return COOL.moves.length+" stretches";
@@ -470,7 +488,7 @@ function enter(first){
   $("vidwrap").classList.toggle("on", !!wantsVideo);
   if(wantsVideo!==curVideo){
     if(wantsVideo){
-      const id = wantsVideo==="arrive" ? day.arrive.video : (wantsVideo==="sun" ? SUN.video : day.settle.video);
+      const id = wantsVideo==="arrive" ? day.arrive.video : (wantsVideo==="sun" ? SUN.video : SETTLE.video);
       try{ pMain.loadVideoById(id); pMain.unMute(); pMain.setVolume(90); }catch(e){}
       startVideo(wantsVideo, day, s);
     } else {
@@ -497,8 +515,8 @@ function enter(first){
   paintBar();
 }
 function startVideo(which, day, s){
-  const meta = which==="arrive" ? day.arrive : (which==="sun" ? SUN : day.settle);
-  const id = which==="arrive" ? day.arrive.video : (which==="sun" ? SUN.video : day.settle.video);
+  const meta = which==="arrive" ? day.arrive : (which==="sun" ? SUN : SETTLE);
+  const id = which==="arrive" ? day.arrive.video : (which==="sun" ? SUN.video : SETTLE.video);
   if(!pMain){ $("vbar").innerHTML="<span>YouTube unavailable</span>"; return; }
   $("vbar").innerHTML = "<a href='https://www.youtube.com/watch?v="+id+"' target='_blank' rel='noopener'>open on YouTube</a>"
                       + " <button id='tapPlay' style='display:none'>▶ tap to play</button>"

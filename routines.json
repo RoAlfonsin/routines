@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "hour_seconds": 3600,
   "note": "One hour per day, give or take a couple of minutes: block lengths are nominal and the three video blocks take their real length at runtime. No block is forced to hit an exact total.",
   "sun": {
@@ -25,6 +25,19 @@
         "title": "10 Minute Sun Salutation Sequence"
       }
     ]
+  },
+  "settle": {
+    "label": "Closing meditation · same every day",
+    "video": "O_StSJFUkiA",
+    "channel": "Moffitt Cancer Center",
+    "title": "10-minute Seated Meditation",
+    "nominal": 613,
+    "note": "Rodri, 2026-09-29: keep this ending meditation for every day."
+  },
+  "transitions": {
+    "after_sun": 15,
+    "before_cooldown": 15,
+    "note": "Rodri, 2026-09-29: a 15 second transition after the sun salutations and another before the cool-down."
   },
   "music": {
     "video": "3PFJ9SETS4M",
@@ -152,12 +165,6 @@
         "title": "5 min Guided Meditation for Inner Peace & Deep Calm",
         "nominal": 315
       },
-      "settle": {
-        "video": "Xl_B45DpMLU",
-        "channel": "Calm",
-        "title": "Daily Calm · Self Soothing",
-        "nominal": 608
-      },
       "main": {
         "label": "Strong Start",
         "source": "Darebee",
@@ -203,12 +210,6 @@
         "title": "Short 5 Minute Guided Meditation for Mindfulness",
         "nominal": 350
       },
-      "settle": {
-        "video": "O_StSJFUkiA",
-        "channel": "Moffitt Cancer Center",
-        "title": "10-minute Seated Meditation",
-        "nominal": 613
-      },
       "main": {
         "label": "Bubble Butt",
         "source": "Darebee",
@@ -253,12 +254,6 @@
         "channel": "Great Meditation",
         "title": "5 Minute Mindfulness Meditation",
         "nominal": 315
-      },
-      "settle": {
-        "video": "jjGs4osVJW4",
-        "channel": "Little Light Meditations",
-        "title": "Take a Seat · 10-minute sitting meditation",
-        "nominal": 611
       },
       "main": {
         "label": "Total Core",
@@ -309,12 +304,6 @@
         "channel": "The Honest Guys",
         "title": "5 Minute Calming Meditation",
         "nominal": 325
-      },
-      "settle": {
-        "video": "QH2pzjpeOu8",
-        "channel": "Brahm Centre",
-        "title": "10-min Seated Body Scan · Angie Chew",
-        "nominal": 625
       },
       "main": {
         "label": "Arms & Back",
@@ -376,12 +365,6 @@
         "title": "5 Minute Every Day Guided Meditation",
         "nominal": 317
       },
-      "settle": {
-        "video": "2L00t5VeVjQ",
-        "channel": "Mark Williams",
-        "title": "10 Min Sitting Meditation",
-        "nominal": 590
-      },
       "main": {
         "label": "Outlast + Last Life",
         "source": "Darebee",
@@ -442,12 +425,6 @@
         "title": "Guided Meditation For Calming The Mind",
         "nominal": 296
       },
-      "settle": {
-        "video": "Xx6gj6RLRdg",
-        "channel": "Declutter The Mind",
-        "title": "10 Minute Guided Meditation for Inner Peace",
-        "nominal": 655
-      },
       "main": {
         "label": "Low Impact",
         "source": "Darebee",
@@ -507,12 +484,6 @@
         "channel": "Goodful",
         "title": "5-Minute Meditation You Can Do Anywhere",
         "nominal": 317
-      },
-      "settle": {
-        "video": "FGO8IWiusJo",
-        "channel": "Boho Beautiful Yoga",
-        "title": "Guided Morning Meditation · 10 Minutes",
-        "nominal": 635
       },
       "main": {
         "label": "Gentle Recovery Flow",
