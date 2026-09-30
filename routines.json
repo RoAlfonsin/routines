@@ -1,7 +1,7 @@
 {
-  "version": 4,
+  "version": 5,
   "hour_seconds": 3600,
-  "note": "One hour per day, give or take a couple of minutes: block lengths are nominal and the three video blocks take their real length at runtime. No block is forced to hit an exact total.",
+  "note": "One hour per day, give or take a couple of minutes: block lengths are nominal and the two video blocks take their real length at runtime. No block is forced to hit an exact total. No opening meditation: the hour starts with the warm-up (Rodri, 2026-09-30).",
   "sun": {
     "label": "Sun Salutations · follow-along class",
     "video": "I9_wJmIAckA",
@@ -159,12 +159,6 @@
       "id": "mon",
       "day": "Monday",
       "focus": "Full-body strength",
-      "arrive": {
-        "video": "4jiMhmGInJ8",
-        "channel": "SarahBethYoga",
-        "title": "5 min Guided Meditation for Inner Peace & Deep Calm",
-        "nominal": 315
-      },
       "main": {
         "label": "Strong Start",
         "source": "Darebee",
@@ -204,12 +198,6 @@
       "id": "tue",
       "day": "Tuesday",
       "focus": "Glutes and legs",
-      "arrive": {
-        "video": "WUASVHlfXeI",
-        "channel": "Declutter The Mind",
-        "title": "Short 5 Minute Guided Meditation for Mindfulness",
-        "nominal": 350
-      },
       "main": {
         "label": "Bubble Butt",
         "source": "Darebee",
@@ -249,12 +237,6 @@
       "id": "wed",
       "day": "Wednesday",
       "focus": "Core",
-      "arrive": {
-        "video": "ssss7V1_eyA",
-        "channel": "Great Meditation",
-        "title": "5 Minute Mindfulness Meditation",
-        "nominal": 315
-      },
       "main": {
         "label": "Total Core",
         "source": "Darebee",
@@ -288,7 +270,7 @@
             "rest": 15
           },
           {
-            "ref": "side-plank-crunches",
+            "ref": "seated-leg-raises",
             "work": 40,
             "rest": 15
           }
@@ -299,12 +281,6 @@
       "id": "thu",
       "day": "Thursday",
       "focus": "Arms and back",
-      "arrive": {
-        "video": "i50ZAs7v9es",
-        "channel": "The Honest Guys",
-        "title": "5 Minute Calming Meditation",
-        "nominal": 325
-      },
       "main": {
         "label": "Arms & Back",
         "source": "Darebee",
@@ -359,12 +335,6 @@
       "id": "fri",
       "day": "Friday",
       "focus": "Cardio, low impact",
-      "arrive": {
-        "video": "lGhRpYzGCzI",
-        "channel": "Great Meditation",
-        "title": "5 Minute Every Day Guided Meditation",
-        "nominal": 317
-      },
       "main": {
         "label": "Outlast + Last Life",
         "source": "Darebee",
@@ -419,12 +389,6 @@
       "id": "sat",
       "day": "Saturday",
       "focus": "Mobility, full body",
-      "arrive": {
-        "video": "zUOGeHJjkU8",
-        "channel": "ABC Science",
-        "title": "Guided Meditation For Calming The Mind",
-        "nominal": 296
-      },
       "main": {
         "label": "Low Impact",
         "source": "Darebee",
@@ -479,12 +443,6 @@
       "id": "sun",
       "day": "Sunday",
       "focus": "Recovery",
-      "arrive": {
-        "video": "inpok4MKVLM",
-        "channel": "Goodful",
-        "title": "5-Minute Meditation You Can Do Anywhere",
-        "nominal": 317
-      },
       "main": {
         "label": "Gentle Recovery Flow",
         "source": "Darebee (pool)",

@@ -11,6 +11,9 @@ Without it the review button copies the review to the clipboard instead.
 """
 import json
 import os
+import shutil
+import subprocess
+import tempfile
 import pathlib
 import sys
 
@@ -38,7 +41,6 @@ def main_cost(m):
 
 def blocks(day):
     return {
-        "Arrive": day["arrive"]["nominal"] + TAIL,
         "Warm-Up": sum(m["work"] + m["rest"] for m in R["warmup"]["moves"]),
         "Sun Salutations": SUN["nominal"] + TAIL,
         day["main"]["label"]: main_cost(day["main"]),
@@ -50,7 +52,7 @@ def blocks(day):
 def audit():
     """Report only. Timing is nominal by design; warn if a day drifts far."""
     warnings = []
-    print(f"{'day':<4} {'arrive':>7} {'warm':>6} {'sun':>6} {'main':>6} {'cool':>6} {'settle':>7} "
+    print(f"{'day':<4} {'warm':>6} {'sun':>6} {'main':>6} {'cool':>6} {'settle':>7} "
           f"{'trans':>6} {'TOTAL':>7} {'vs 60:00':>9}")
     for d in R["days"]:
         b = blocks(d)
@@ -84,8 +86,22 @@ def build():
 
     OUTDIR.mkdir(exist_ok=True)
     html = TEMPLATE.replace("__DATA__", payload)
-    (OUTDIR / "index.html").write_text(html, encoding="utf-8")
-    print(f"wrote {OUTDIR/'index.html'} ({len(html)//1024} KB) · {len(R['days'])} days · {len(data['pool'])} moves")
+    path = OUTDIR / "index.html"
+    path.write_text(html, encoding="utf-8")
+    print(f"wrote {path} ({len(html)//1024} KB) · {len(R['days'])} days · {len(data['pool'])} moves")
+
+    # A broken script tag ships a blank page silently. If node is around, parse the inline
+    # JS and refuse to call the build good when it doesn't.
+    if shutil.which("node"):
+        js = html[html.index("<script>") + 8: html.rindex("</script>")]
+        tmp = pathlib.Path(tempfile.gettempdir()) / "hour_check.js"
+        tmp.write_text(js, encoding="utf-8")
+        r = subprocess.run(["node", "--check", str(tmp)], capture_output=True, text=True)
+        if r.returncode != 0:
+            print("\nJS SYNTAX ERROR — the page would not run:")
+            print(r.stderr.strip()[:1500])
+            return 1
+        print("inline JS parses cleanly (node --check)")
     return 0
 
 
@@ -130,6 +146,27 @@ TEMPLATE = r"""<!DOCTYPE html>
   .blk em{font-style:normal;color:var(--dim);font-size:.82em;display:block}
   .blk u{text-decoration:none;font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600}
   .dot{display:inline-block;width:.6em;height:.6em;border-radius:99px;margin-right:.5em}
+  /* ---------- routine moves ---------- */
+  #routine{margin-top:clamp(10px,2vh,26px)}
+  .rsec{margin-bottom:clamp(10px,1.6vh,20px)}
+  .rhead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+         border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:4px}
+  .rhead b{font-size:clamp(13px,1.8vh,19px);font-weight:700}
+  .rhead em{font-style:normal;color:var(--dim);font-size:.84em;white-space:nowrap}
+  .rmv{display:grid;grid-template-columns:clamp(46px,6vh,72px) 1fr;gap:clamp(8px,1.2vw,16px);
+       padding:clamp(5px,.9vh,11px) 0;border-bottom:1px solid #1a2231;align-items:start}
+  .rmv:last-child{border-bottom:0}
+  .rmv svg{width:100%;height:auto;display:block}
+  .rmv .nm{font-weight:700;font-size:clamp(14px,1.9vh,21px)}
+  .rmv .nm u{text-decoration:none;color:var(--dim);font-weight:600;font-size:.8em;
+             margin-left:.6em;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .rmv .cue{color:#b9c4d4;font-size:clamp(12px,1.55vh,17px);margin-top:2px}
+  .rmv .links{margin-top:5px;display:flex;gap:14px;flex-wrap:wrap;align-items:baseline}
+  .rmv .links a{font-size:clamp(11px,1.45vh,15px);text-decoration:none;white-space:nowrap}
+  .rmv a.demo{color:var(--work)}
+  .rnote{color:var(--dim);font-size:clamp(11px,1.5vh,16px);text-align:center;
+         padding:clamp(4px,.7vh,9px) 0}
+  .rtitle{font-size:clamp(16px,2.3vh,26px);font-weight:800;margin:0 0 2px}
   .foot{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:auto;padding-top:clamp(10px,2vh,22px)}
   #startBtn{flex:1;min-width:240px;font-size:clamp(17px,2.4vh,26px);padding:clamp(14px,2.2vh,24px)}
   .tog{display:flex;gap:8px;align-items:center;color:var(--dim);font-size:.86em;cursor:pointer}
@@ -150,6 +187,8 @@ TEMPLATE = r"""<!DOCTYPE html>
   #cue{color:#cdd6e4;font-size:clamp(16px,2.8vh,36px);max-width:38ch;margin-top:clamp(3px,1vh,14px);min-height:1.3em}
   #meta,#next{color:#b9c4d4;font-size:clamp(14px,2.1vh,24px)}
   #meta{margin-top:clamp(4px,1vh,12px)}
+  #runfig{display:none;margin:clamp(2px,.8vh,12px) auto 0;width:clamp(92px,15vh,190px);opacity:.95}
+  #runfig svg{width:100%;height:auto;display:block}
   #vidwrap{margin:clamp(4px,1vh,14px) 0;display:none}
   #vidwrap.on{display:block}
   iframe{width:100%;aspect-ratio:16/9;border:0;border-radius:14px;background:#000;max-height:52vh}
@@ -194,6 +233,8 @@ TEMPLATE = r"""<!DOCTYPE html>
     <h1>The Hour</h1>
     <div class="sub" id="tagline"></div>
     <div class="days" id="days"></div>
+    <div class="rtitle" style="margin-top:clamp(10px,2vh,24px)">The moves <span class="sub" style="margin:0">— every move in the selected routine, in order</span></div>
+    <div id="routine"></div>
     <div class="cols">
       <div><div class="sub" style="margin:0 0 4px">Today's hour</div><div id="blocks"></div></div>
       <div><div class="sub" style="margin:0 0 4px">Move pool</div><div id="poolInfo"></div></div>
@@ -213,6 +254,7 @@ TEMPLATE = r"""<!DOCTYPE html>
     <div class="topline"><div id="blockName">&nbsp;</div><div id="hourClock">&nbsp;</div></div>
     <div id="stage">
       <div id="clock">0:00</div>
+      <div id="runfig"></div>
       <div id="moveName">&nbsp;</div>
       <div id="sub"></div>
       <div id="cue"></div>
@@ -293,9 +335,9 @@ let voiceEnabled=false;
 function say(t){ if(!voiceEnabled||!("speechSynthesis" in window)||!t) return;
   try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(t); u.rate=1.04; speechSynthesis.speak(u);}catch(e){} }
 
-/* ================= youtube: 3 content blocks + a music bed ================= */
+/* ================= youtube: 2 content blocks + a music bed ================= */
 let ytReady=false, pMain=null, pMusic=null;
-let durs={arrive:null,sun:null,settle:null}, dursFor=null;
+let durs={sun:null,settle:null}, dursFor=null;
 let musicWanted=true, musicVol=35;
 
 function mkPlayer(hostId, vid, opts){
@@ -310,20 +352,20 @@ function mkPlayer(hostId, vid, opts){
 window.onYouTubeIframeAPIReady = function(){
   ytReady = true;
   if(pMain) return;
-  pMain  = mkPlayer("vpMain",  currentDay().arrive.video, {main:true});
+  pMain  = mkPlayer("vpMain",  SUN.video, {main:true});
   pMusic = mkPlayer("vpMusic", MUSIC.video, {music:true});
   prefetch(currentDay());
 };
-/* Read the real length of all three videos once, through the single visible player. */
+/* Read the real length of both videos once, through the single visible player. */
 function prefetch(day){
   if(!pMain || dursFor===day.id) return;
-  dursFor = day.id; durs = {arrive:null,sun:null,settle:null};
+  dursFor = day.id; durs = {sun:null,settle:null};
   try{ pMain.mute(); }catch(e){}
-  const list=[["arrive",day.arrive.video],["sun",SUN.video],["settle",SETTLE.video]];
+  const list=[["sun",SUN.video],["settle",SETTLE.video]];
   let k=0;
   const next=()=>{
     if(k>=list.length){
-      try{ pMain.cueVideoById(day.arrive.video); pMain.unMute(); }catch(e){}
+      try{ pMain.cueVideoById(SUN.video); pMain.unMute(); }catch(e){}
       renderMenu(); return;
     }
     const key=list[k][0], vid=list[k][1]; k++;
@@ -344,22 +386,19 @@ function mainCost(m){
   return per*m.rounds + m.rest_between_rounds*(m.rounds-1) - m.moves[m.moves.length-1].rest;
 }
 function plan(day){
-  const arrive = (durs.arrive || day.arrive.nominal) + TAIL;
   const sun    = (durs.sun    || SUN.nominal) + TAIL;
   const settle = (durs.settle || SETTLE.nominal) + TAIL;
   const warm = sumMoves(WARM.moves), cool = sumMoves(COOL.moves), main = mainCost(day.main);
-  return {arrive, warm, sun, main, cool, settle, tr:TR_SECONDS,
-          total: arrive+warm+sun+main+cool+settle+TR_SECONDS};
+  return {warm, sun, main, cool, settle, tr:TR_SECONDS,
+          total: warm+sun+main+cool+settle+TR_SECONDS};
 }
 function buildTimeline(day){
   const p = plan(day), steps=[];
   const V = (name,label,sub,cue,dur,which) => steps.push({block:name,kind:"meditation",label,sub,cue,dur,video:which,round:1,rounds:1});
 
-  V("Arrive", day.arrive.title, day.arrive.channel, "Sit down, settle in. Let the recording guide you.", p.arrive, "arrive");
-
   WARM.moves.forEach((x,i)=>{
     const mv=POOL[x.ref], nx = WARM.moves[i+1] ? POOL[WARM.moves[i+1].ref].name : "the sun salutation class";
-    steps.push({block:"Warm-Up", kind:"work", label:mv.name, cue:mv.cue, dur:x.work,
+    steps.push({block:"Warm-Up", kind:"work", label:mv.name, cue:mv.cue, dur:x.work, fig:mv.fig,
                 round:1, rounds:1, idx:i+1, count:WARM.moves.length, next:nx, music:true});
     if(x.rest>0) steps.push({block:"Warm-Up", kind:"rest", label:"Change over", cue:"",
                 dur:x.rest, round:1, rounds:1, idx:i+1, count:WARM.moves.length, next:nx, music:true});
@@ -379,7 +418,7 @@ function buildTimeline(day){
     m.moves.forEach((x,i)=>{
       const mv=POOL[x.ref], last=(r===m.rounds && i===m.moves.length-1);
       const nx = m.moves[i+1] ? POOL[m.moves[i+1].ref].name : (r<m.rounds ? "Round "+(r+1) : "Cool-down");
-      steps.push({block:m.label, kind:"work", label:mv.name, cue:mv.cue, dur:x.work,
+      steps.push({block:m.label, kind:"work", label:mv.name, cue:mv.cue, dur:x.work, fig:mv.fig,
                   round:r, rounds:m.rounds, idx:i+1, count:m.moves.length, next:nx, music:true});
       if(x.rest>0 && !last) steps.push({block:m.label, kind:"rest", label:"Rest", cue:"Breathe.",
                   dur:x.rest, round:r, rounds:m.rounds, idx:i+1, count:m.moves.length,
@@ -398,13 +437,109 @@ function buildTimeline(day){
 
   COOL.moves.forEach((x,i)=>{
     const mv=POOL[x.ref];
-    steps.push({block:"Cool-Down", kind:"stretch", label:mv.name, cue:mv.cue, dur:x.work+x.rest,
+    steps.push({block:"Cool-Down", kind:"stretch", label:mv.name, cue:mv.cue, dur:x.work+x.rest, fig:mv.fig,
                 round:1, rounds:1, idx:i+1, count:COOL.moves.length,
                 next: COOL.moves[i+1] ? POOL[COOL.moves[i+1].ref].name : "the closing meditation", music:true});
   });
 
   V("Settle", SETTLE.title, SETTLE.channel, "Same closing meditation every day. Sit down, close your eyes, follow the voice.", p.settle, "settle");
   return steps;
+}
+
+/* ================= move pictograms ================= */
+/* Own schematic artwork. Each pool move carries [pose, motion, anchor] — a stick figure in
+   the move's body position, with the arrow drawn at the joint that actually travels (head,
+   arms, torso, hips, legs, feet). It shows POSITION and DIRECTION, not fine form: the cue
+   text and the demo link on each row carry the detail. */
+const POSES = {
+  standing: { art:"<circle cx='24' cy='9' r='3.7'/><path d='M24 13.5V27M24 16.5L17.5 24M24 16.5L30.5 24M24 27L19.5 39.5M24 27L28.5 39.5'/>",
+              at:{head:[24,9],shoulders:[24,15],torso:[24,21],arms:[30.5,23],hips:[24,27],legs:[26,33],feet:[26,39]}, lane:41 },
+  seated:   { art:"<circle cx='17' cy='11' r='3.6'/><path d='M17 15V25M17 25H30M30 25V36.5M30 36.5H34M17 18L24 23'/><path d='M12 27.5H33' stroke-dasharray='2 3.2' opacity='.5'/>",
+              at:{head:[17,11],shoulders:[17,16],torso:[17,21],arms:[24,23],hips:[17,25],legs:[26,25],feet:[32,36]}, lane:47 },
+  allfours: { art:"<circle cx='12' cy='15.5' r='3.4'/><path d='M15.5 17.5H31M17 18V31M28 18V31M30.5 18L37.5 24M37.5 24V32'/>",
+              at:{head:[12,15.5],shoulders:[17,18],torso:[24,18],arms:[17,25],hips:[30.5,18.5],legs:[34,22],feet:[37.5,31]}, lane:49 },
+  plank:    { art:"<circle cx='11' cy='15' r='3.4'/><path d='M13.5 17L39 24M16 18V31M22 19.5V32M39 24L43.5 30'/>",
+              at:{head:[11,15],shoulders:[16.5,18],torso:[25,20],arms:[16,25],hips:[31.5,21],legs:[36,23],feet:[41.5,27]}, lane:51 },
+  v:        { art:"<circle cx='12' cy='30' r='3.4'/><path d='M15 28L24 20L30.5 17.5M15 28L13 36.5M24 20L34 27M34 27L40.5 36.5M30.5 17.5L36 25'/>",
+              at:{head:[12,30],shoulders:[16.5,26],torso:[24,20],arms:[14,32],hips:[30.5,17.5],legs:[35,26],feet:[40.5,36]}, lane:49 },
+  floor:    { art:"<circle cx='16' cy='28' r='3.4'/><path d='M20.5 27L25 25L34 31.5M20.5 27L11 29M34 31.5L38.5 36'/>",
+              at:{head:[16,28],shoulders:[21,26],torso:[27,28],arms:[15,28.5],hips:[34,31.5],legs:[36.5,34],feet:[38.5,36]}, lane:47 },
+  supine:   { art:"<circle cx='10' cy='30' r='3.4'/><path d='M13.5 31H29M29 31L38.5 25M29 31L38.5 35.5M15.5 31L17.5 24M29 31L32 24.5'/>",
+              at:{head:[10,30],shoulders:[15.5,31],torso:[21,31],arms:[16.5,24.5],hips:[29,31],legs:[35,29],feet:[42,31]}, lane:49 },
+  prone:    { art:"<circle cx='11' cy='29' r='3.4'/><path d='M14.5 31H31M31 31H42M13 30L6 26M13 32L6 35'/>",
+              at:{head:[11,29],shoulders:[15.5,31],torso:[22,31],arms:[9,30],hips:[31,31],legs:[36,31],feet:[42,31]}, lane:49 },
+};
+const ARROW = "#7ee0a8";
+function headAt(x,y,dx,dy){ const n=Math.hypot(dx,dy)||1; dx/=n; dy/=n; const p=6.5,o=3.1;
+  return "<path d='M"+x.toFixed(1)+" "+y.toFixed(1)+"L"+(x-dx*p+dy*o).toFixed(1)+" "+(y-dy*p-dx*o).toFixed(1)
+       + "M"+x.toFixed(1)+" "+y.toFixed(1)+"L"+(x-dx*p-dy*o).toFixed(1)+" "+(y-dy*p+dx*o).toFixed(1)+"'/>"; }
+function arrowSVG(motion, a, lane){
+  /* Arrows live in a clear lane to the right of the figure, at the height of the joint
+     that moves, joined to it by a faint connector — so nothing is drawn over the body. */
+  const x = lane, yc = Math.max(10, Math.min(38, a[1]));
+  const go = { up:[0,-1], down:[0,1], out:[1,0], in:[-1,0], fwd:[0.76,-0.65], back:[-0.76,0.65] }[motion];
+  let body = "<path d='M"+a[0]+" "+a[1]+"L"+x+" "+yc+"' opacity='.45'/>";
+  if(go){
+    let x1,y1,x2,y2;
+    if(Math.abs(go[1]) > Math.abs(go[0])){ x1=x; y1=yc - go[1]*7;  x2=x; y2=yc + go[1]*6; }
+    else if(go[0] > 0){                     x1=x-1; y1=yc;          x2=x+10; y2=yc; }
+    else {                                  x1=x+10; y1=yc;         x2=x-1;  y2=yc; }
+    if(go[1] && go[0]){ x1=x-4; y1=yc+6; x2=x+7; y2=yc-6; if(go[1]>0){ const t=[x1,y1]; x1=x2; y1=y2; x2=t[0]; y2=t[1]; } }
+    body += "<path d='M"+x1.toFixed(1)+" "+y1.toFixed(1)+"L"+x2.toFixed(1)+" "+y2.toFixed(1)+"'/>"
+          + headAt(x2,y2,x2-x1,y2-y1);
+  } else if(motion==="circle" || motion==="twist"){
+    body += "<path d='M"+(x+5.5)+" "+yc+"a5.5 5.5 0 1 1-5 2.8'/>" + headAt(x+0.3,yc+2.8,-1,0.3);
+  } else {  /* hold */
+    body += "<circle cx='"+x+"' cy='"+yc+"' r='5.5'/><circle cx='"+x+"' cy='"+yc+"' r='1.4' fill='"+ARROW+"'/>";
+  }
+  return "<g stroke='"+ARROW+"' stroke-width='2.2' fill='none' stroke-linecap='round' stroke-linejoin='round'>"+body+"</g>";
+}
+function figSVG(fig, px){
+  const pose = (fig && POSES[fig[0]]) ? POSES[fig[0]] : POSES.standing;
+  const at = pose.at[(fig && fig[2]) || "torso"] || pose.at.torso;
+  return "<svg viewBox='0 0 64 48' width='"+(px||64)+"' role='img' aria-label='"+(fig?fig.join(" "):"")+"'>"
+       + "<g stroke='#cfe0ff' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'>"
+       + pose.art + "</g>" + arrowSVG((fig && fig[1]) || "hold", at, pose.lane || 45) + "</svg>";
+}
+function demoURL(name){
+  return "https://www.youtube.com/results?search_query="+encodeURIComponent(name+" exercise proper form");
+}
+function moveRow(mv, x){
+  const d = x ? (x.work + (x.rest||0)) : 0;
+  return "<div class='rmv'>" + figSVG(mv.fig)
+    + "<div class='body'><div class='nm'>" + mv.name + (d ? "<u>" + fmt(d) + "</u>" : "") + "</div>"
+    + "<div class='cue'>" + mv.cue + "</div>"
+    + "<div class='links'><a class='demo' href='" + demoURL(mv.name) + "' target='_blank' rel='noopener'>▶ see it done</a>"
+    + "<span class='rsum'>" + mv.pattern + " · " + mv.position + " · level " + mv.level + "</span></div>"
+    + "</div></div>";
+}
+function rsection(title, right, rows){
+  return "<div class='rsec'><div class='rhead'><b>" + title + "</b><em>" + right + "</em></div>"
+       + rows.join("") + "</div>";
+}
+function routinePanel(day){
+  const p = plan(day), m = day.main, out = [];
+  out.push(rsection("Warm-Up", fmt(p.warm) + " · " + R.warmup.moves.length + " moves",
+                    R.warmup.moves.map(x => moveRow(POOL[x.ref], x))));
+  out.push(rsection("Sun Salutations", fmt(p.sun),
+    ["<div class='rmv'>" + figSVG(["floor","up"])
+     + "<div class='body'><div class='nm'>" + SUN.title + "<u>" + fmt(p.sun) + "</u></div>"
+     + "<div class='cue'>" + SUN.channel + " — follow along and copy the rhythm; no timer during this block.</div>"
+     + "<div class='links'><a class='demo' href='https://www.youtube.com/watch?v=" + SUN.video
+     + "' target='_blank' rel='noopener'>▶ open the class</a></div></div></div>"]));
+  out.push("<div class='rnote'>↓ transition · " + TR.after_sun + "s</div>");
+  out.push(rsection(m.label, m.rounds + " rounds · " + m.moves.length + " moves · " + fmt(p.main),
+                    m.moves.map(x => moveRow(POOL[x.ref], x))));
+  out.push("<div class='rnote'>↓ transition · " + TR.before_cooldown + "s</div>");
+  out.push(rsection("Cool-Down", fmt(p.cool) + " · " + COOL.moves.length + " stretches",
+                    COOL.moves.map(x => moveRow(POOL[x.ref], x))));
+  out.push(rsection("Closing meditation", fmt(p.settle),
+    ["<div class='rmv'>" + figSVG(["seated","hold"])
+     + "<div class='body'><div class='nm'>" + SETTLE.title + "<u>" + fmt(p.settle) + "</u></div>"
+     + "<div class='cue'>" + SETTLE.channel + " — the same closing meditation every day.</div>"
+     + "<div class='links'><a class='demo' href='https://www.youtube.com/watch?v=" + SETTLE.video
+     + "' target='_blank' rel='noopener'>▶ open on YouTube</a></div></div></div>"]));
+  return out.join("");
 }
 
 /* ================= menu ================= */
@@ -420,7 +555,6 @@ function colorFor(name,day){
   return COL.work;
 }
 function descFor(name,day){
-  if(name==="Arrive") return day.arrive.channel;
   if(name==="Settle") return SETTLE.channel+" · same every day";
   if(name==="Sun Salutations") return SUN.channel+" · follow-along class";
   if(name==="Warm-Up") return WARM.moves.length+" moves · seated to standing";
@@ -437,9 +571,9 @@ function renderMenu(){
     box.appendChild(b);
   });
   const day=currentDay();
-  const keys=["Arrive","Warm-Up","Sun Salutations",day.main.label,"Cool-Down","Settle"];
+  const keys=["Warm-Up","Sun Salutations",day.main.label,"Cool-Down","Settle"];
   const p=plan(day);
-  const vals=[p.arrive,p.warm,p.sun,p.main,p.cool,p.settle];
+  const vals=[p.warm,p.sun,p.main,p.cool,p.settle];
   const box2=$("blocks"); box2.innerHTML="";
   keys.forEach((k,i)=>{
     const div=document.createElement("div"); div.className="blk";
@@ -452,11 +586,13 @@ function renderMenu(){
   $("poolInfo").innerHTML = "<div class='blk'><div><b>"+Object.keys(POOL).length+" moves</b><em>tagged by pattern, position, impact, level</em></div></div>"
     + "<div class='blk'><div><b>Music</b><em>"+MUSIC.title+" · "+MUSIC.channel+"</em></div></div>"
     + "<div class='blk'><div><b>Sun class</b><em>"+SUN.title+"</em></div></div>";
-  $("tagline").textContent = "One hour a day · arrive · warm-up seated to standing · sun salutation class · main routine · cool-down · closing meditation";
+  $("tagline").textContent = "One hour a day · warm-up seated to standing · sun salutation class · main routine · cool-down · closing meditation";
+  $("routine").innerHTML = "<div class='sub'>"+day.day+" · "+day.focus+" — "+day.main.label
+                         + " · "+fmt(p.total)+" total</div>" + routinePanel(day);
   $("startBtn").textContent="Start "+day.day+" · "+day.main.label;
   $("musicName").textContent = MUSIC.title+" · "+MUSIC.channel;
-  $("vstatus").textContent = (durs.arrive
-      ? "Video lengths read from YouTube: "+fmt(durs.arrive)+", "+fmt(durs.sun||0)+", "+fmt(durs.settle||0)+"."
+  $("vstatus").textContent = (durs.sun
+      ? "Video lengths read from YouTube: "+fmt(durs.sun)+", "+fmt(durs.settle||0)+"."
       : (ytReady ? "Reading video lengths…" : "YouTube unavailable — nominal lengths used."));
 }
 
@@ -477,6 +613,9 @@ function enter(first){
   const s=st.steps[st.i], day=currentDay();
   $("blockName").textContent = s.block + (s.rounds>1 ? " · round "+s.round+"/"+s.rounds : "");
   $("moveName").textContent = s.label;
+  const fw = $("runfig");
+  if(s.fig){ fw.innerHTML = figSVG(s.fig, 190); fw.style.display = "block"; }
+  else { fw.innerHTML = ""; fw.style.display = "none"; }
   $("sub").textContent = s.sub || "";
   $("cue").textContent = s.cue || "";
   $("meta").textContent = s.count>1 ? ("move "+s.idx+" of "+s.count) : "";
@@ -488,7 +627,7 @@ function enter(first){
   $("vidwrap").classList.toggle("on", !!wantsVideo);
   if(wantsVideo!==curVideo){
     if(wantsVideo){
-      const id = wantsVideo==="arrive" ? day.arrive.video : (wantsVideo==="sun" ? SUN.video : SETTLE.video);
+      const id = wantsVideo==="sun" ? SUN.video : SETTLE.video;
       try{ pMain.loadVideoById(id); pMain.unMute(); pMain.setVolume(90); }catch(e){}
       startVideo(wantsVideo, day, s);
     } else {
@@ -515,8 +654,8 @@ function enter(first){
   paintBar();
 }
 function startVideo(which, day, s){
-  const meta = which==="arrive" ? day.arrive : (which==="sun" ? SUN : SETTLE);
-  const id = which==="arrive" ? day.arrive.video : (which==="sun" ? SUN.video : SETTLE.video);
+  const meta = which==="sun" ? SUN : SETTLE;
+  const id = which==="sun" ? SUN.video : SETTLE.video;
   if(!pMain){ $("vbar").innerHTML="<span>YouTube unavailable</span>"; return; }
   $("vbar").innerHTML = "<a href='https://www.youtube.com/watch?v="+id+"' target='_blank' rel='noopener'>open on YouTube</a>"
                       + " <button id='tapPlay' style='display:none'>▶ tap to play</button>"
@@ -585,7 +724,7 @@ const save=a=>{ try{localStorage.setItem(RKEY,JSON.stringify(a));}catch(e){} };
 const today=()=>new Date().toISOString().slice(0,10);
 let draft={overall:0,blocks:{},note:""};
 
-function blockKeys(day){ return ["Arrive","Warm-Up","Sun Salutations",day.main.label,"Cool-Down","Settle"]; }
+function blockKeys(day){ return ["Warm-Up","Sun Salutations",day.main.label,"Cool-Down","Settle"]; }
 function starsFor(key,n,onPick){
   const wrap=document.createElement("div"); wrap.className="stars";
   for(let i=1;i<=5;i++){

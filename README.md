@@ -4,7 +4,6 @@ One hour a day, seven days a week. Same order every day:
 
 | block | nominal | what |
 |---|---|---|
-| Arrive | ~5 min | seated guided meditation (YouTube) |
 | Warm-Up | 8:04 | 11 moves, seated → standing, up the body: neck, shoulders, spine, arms, wrists, hips, legs |
 | Sun Salutations | ~11 min | **follow-along class** (YouTube) — watch and copy the rhythm |
 | *Transition* | 0:15 | breathe, shake it out |
@@ -13,12 +12,25 @@ One hour a day, seven days a week. Same order every day:
 | Cool-Down | 5:00 | 8 stretches |
 | Settle | ~10 min | seated guided meditation (YouTube) — **the same one every day** |
 
-Three blocks are YouTube videos and take their **real** length at runtime, so the hour runs
-61:45–64:25 rather than exactly 60:00. Timing is deliberately nominal, with about ±1½
-minutes of slack per block. No block is forced onto an exact total.
+There is no opening meditation — the hour starts straight into the warm-up.
+
+Two blocks are YouTube videos and take their **real** length at runtime, so the hour runs
+**57:00–59:00**. Timing is deliberately nominal, with about ±1½ minutes of slack per
+block; no block is forced onto an exact total.
 
 **Music** (lofi girl) plays under the three timed blocks and stops automatically while a
 video block is on, then picks up again.
+
+## Seeing the moves
+
+The menu lists **every move in the selected routine, in order** — warm-up, sun class, main
+circuit, cool-down, closing meditation — with its duration, its cue, and a **▶ see it done**
+link that opens a demonstration search for that move.
+
+Each move also carries a small **pictogram**: a stick figure in the move's body position
+with a green arrow in a clear lane beside the figure, aligned to the joint that actually
+travels and joined to it by a faint connector. It shows *position and direction*, not fine
+form — the cue text and the demo link carry the detail.
 
 ## The week
 
@@ -76,7 +88,10 @@ shows the recent ones.
 ## Changing things
 
 - **Swap a meditation or the sun class:** change the `video` ID in `routines.json`
-  (`arrive`/`settle` per day, `sun` shared). Durations are measured at runtime.
+  (`settle` and `sun` are shared all week). Durations are measured at runtime.
+- **Adjust a pictogram:** each pool move has `fig: [pose, motion, anchor]`. Poses live in
+  `POSES` in `build_site.py`, each with a `lane` (the clear column its arrows are drawn in)
+  and an `at` map of joint coordinates.
 - **Swap the music:** change `music.video`.
 - **Change a main routine:** edit that day's `main.moves` (a `ref` into `pool.json` plus
   `work`/`rest` seconds) and `rounds`.
