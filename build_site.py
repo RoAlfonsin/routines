@@ -1170,6 +1170,24 @@ function tokenBoxHTML(){
 }
 
 /* ---------- save ---------- */
+/* routines.json carries an `updated` stamp: the page only replaces its built-in copy with
+   GitHub's when GitHub's is strictly newer, so a CDN lag can never roll the data backwards. */
+const SAVEDKEY="fitness.saved.v1";
+const SAVED_TTL=10*60*1000;
+function cacheSaved(routines,poolFile){
+  try{ localStorage.setItem(SAVEDKEY, JSON.stringify({at:Date.now(), routines, poolFile})); }catch(e){}
+}
+function readSaved(){
+  try{
+    const j=JSON.parse(localStorage.getItem(SAVEDKEY));
+    if(!j || !j.routines || !j.poolFile){ clearSaved(); return null; }
+    if(Date.now()-j.at > SAVED_TTL){ clearSaved(); return null; }
+    return j;
+  }catch(e){ clearSaved(); return null; }
+}
+function clearSaved(){ try{ localStorage.removeItem(SAVEDKEY); }catch(e){} }
+const stampOf=r=>Date.parse((r && r.updated) || "")||0;
+
 async function waitForLive(wantR, wantP){
   for(let i=0;i<20;i++){
     try{
@@ -1189,6 +1207,7 @@ async function saveEdits(){
   if(problem){ hint.textContent="Not saved — "+problem+"."; return; }
   const off=ED.routines.days.filter(d=>Math.abs(plan(d,ED.routines).total-HOUR)>420)
                            .map(d=>d.id+" "+fmt(plan(d,ED.routines).total));
+  ED.routines.updated=new Date().toISOString();      /* the freshness stamp the page compares */
   /* A section with no moves in it contributes nothing and only confuses the menu: drop it. */
   let dropped=0;
   ED.routines.days.forEach(d=>{
@@ -1204,16 +1223,17 @@ async function saveEdits(){
     if(ED.poolDirty) await ghPut("pool.json", ED.poolFile, "The Hour: new moves from the phone editor");
     const wantR=clone(ED.routines), wantP=clone(ED.poolFile);
     ED.poolDirty=false;
+    cacheSaved(wantR, wantP);                   /* this device shows its own save straight away */
     applyData(clone(wantR), clone(wantP));      /* the app runs the new version right away */
     ED.dirty=false;
-    hint.textContent="Committed. GitHub Pages is rebuilding (about 30s) — waiting for the live file…";
+    hint.textContent="Committed. Waiting for GitHub to serve the new file…";
     renderEditor();
     const ok=await waitForLive(wantR, wantP);
     const tail = off.length ? " Heads up: "+off.join(", ")+" "+(off.length>1?"are":"is")+" more than 7 minutes off an hour." : "";
     const gone = dropped ? " (Dropped "+dropped+" empty section"+(dropped>1?"s":"")+" — a section with no moves does nothing.)" : "";
     hint.textContent = (ok
       ? "Live and saved to GitHub."
-      : "Committed, but GitHub is still serving the old file — reload in a minute.") + tail + gone;
+      : "Saved. GitHub is still serving the old copy, but this device keeps showing your edit — a reload elsewhere may lag a minute.") + tail + gone;
     renderMenu();
   }catch(e){
     hint.textContent="Could not save — "+e.message;
@@ -1260,20 +1280,39 @@ $("newAdd").onclick=()=>{
 };
 
 /* ================= boot ================= */
-/* The committed JSON on GitHub wins over the copy baked into this file, so an edit is live as
-   soon as it is pushed, without waiting for the Pages rebuild. If GitHub cannot be reached — or
-   the committed data is broken — the baked copy runs and the menu says so. */
+/* Three copies of the routines can exist: the one baked into this page by the last successful
+   build, the one GitHub serves right now, and the one this device saved minutes ago. They are
+   compared by the `updated` stamp the editor writes — GitHub's copy is adopted only when it is
+   strictly newer than the built one, so a slow CDN can never show an older routine. */
 async function boot(){
-  let note="Using the copy stored in this page.";
+  const bakedStamp=stampOf(DATA.routines);
+  let routines=DATA.routines, poolFile=DATA.poolFile, stamp=bakedStamp, note=null, problem=null;
   try{
     const live=await loadLive();
-    applyData(live.routines, live.poolFile);
-    note="Live from GitHub · "+(POOLFILE.moves||[]).length+" moves · routines v"+(R.version||"?");
-  }catch(e){
-    note = navigator.onLine===false
-      ? "Offline — using the copy stored in this page."
-      : "GitHub is not serving usable data ("+e.message+") — using the copy stored in this page.";
-  }
+    const liveStamp=stampOf(live.routines);
+    if(liveStamp>bakedStamp){
+      routines=live.routines; poolFile=live.poolFile; stamp=liveStamp;
+      note="Live from GitHub · "+(poolFile.moves||[]).length+" moves.";
+    } else if(liveStamp<bakedStamp){
+      note="GitHub is serving an older copy than this build — running the built one.";
+    } else if(liveStamp>0){
+      note="Live from GitHub · "+(live.poolFile.moves||[]).length+" moves.";
+    } else {
+      note="Working from the copy stored in this page.";
+    }
+  }catch(e){ problem=e.message; }
+
+  const saved=readSaved();
+  if(saved && saved.at>stamp){
+    routines=saved.routines; poolFile=saved.poolFile; stamp=saved.at;
+    note="Showing the edit saved from this device — GitHub may still be catching up.";
+  } else if(saved) clearSaved();
+
+  applyData(routines, poolFile);
+  if(!note)
+    note = navigator.onLine===false ? "Offline — using the copy stored in this page."
+         : (problem ? "GitHub is not serving usable data ("+problem+") — using the copy stored in this page."
+                    : "Working from the copy stored in this page.");
   const TODAY=new Date().getDay();                      // 0 Sun .. 6 Sat
   selId=(R.days[(TODAY+6)%7] || R.days[0]).id;           // Monday-first week
   $("liveStatus").textContent=note;

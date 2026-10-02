@@ -495,5 +495,6 @@
     }
   ],
   "timing_margin_seconds": 90,
-  "video_tail": 5
+  "video_tail": 5,
+  "updated": "2026-10-02T17:52:36Z"
 }
