@@ -447,50 +447,50 @@
         "label": "Gentle Recovery Flow",
         "source": "Darebee (pool)",
         "url": "https://darebee.com/workouts/low-impact-workout.html",
-        "rounds": 3,
         "rest_between_rounds": 45,
         "moves": [
           {
             "ref": "cat-cow",
-            "work": 40,
-            "rest": 15
+            "work": 60,
+            "rest": 5
           },
           {
             "ref": "childs-pose",
-            "work": 40,
-            "rest": 15
+            "work": 60,
+            "rest": 5
           },
           {
             "ref": "glute-bridges",
-            "work": 40,
-            "rest": 15
+            "work": 60,
+            "rest": 5
           },
           {
             "ref": "dead-bugs",
-            "work": 40,
-            "rest": 15
+            "work": 60,
+            "rest": 5
           },
           {
             "ref": "side-leg-raises-stand",
-            "work": 40,
-            "rest": 15
+            "work": 60,
+            "rest": 5
           },
           {
             "ref": "seated-forward-fold",
-            "work": 40,
-            "rest": 15
+            "work": 60,
+            "rest": 5
           },
           {
             "ref": "figure-four",
-            "work": 40,
-            "rest": 15
+            "work": 60,
+            "rest": 5
           },
           {
             "ref": "neck-stretch",
-            "work": 40,
-            "rest": 15
+            "work": 60,
+            "rest": 5
           }
-        ]
+        ],
+        "rounds": 1
       }
     }
   ],
