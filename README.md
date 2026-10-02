@@ -24,13 +24,10 @@ video block is on, then picks up again.
 ## Seeing the moves
 
 The menu lists **every move in the selected routine, in order** — warm-up, sun class, main
-circuit, cool-down, closing meditation — with its duration, its cue, and a **▶ see it done**
-link that opens a demonstration search for that move.
-
-Each move also carries a small **pictogram**: a stick figure in the move's body position
-with a green arrow in a clear lane beside the figure, aligned to the joint that actually
-travels and joined to it by a faint connector. It shows *position and direction*, not fine
-form — the cue text and the demo link carry the detail.
+circuit, cool-down, closing meditation — with its duration, its cue, and its pattern /
+position / level. The sun class and the closing meditation rows also link straight to their
+YouTube video. There are no pictograms and no per-move demo searches: the cue text is the
+instruction.
 
 ## The week
 
@@ -89,9 +86,6 @@ shows the recent ones.
 
 - **Swap a meditation or the sun class:** change the `video` ID in `routines.json`
   (`settle` and `sun` are shared all week). Durations are measured at runtime.
-- **Adjust a pictogram:** each pool move has `fig: [pose, motion, anchor]`. Poses live in
-  `POSES` in `build_site.py`, each with a `lane` (the clear column its arrows are drawn in)
-  and an `at` map of joint coordinates.
 - **Swap the music:** change `music.video`.
 - **Change a main routine:** edit that day's `main.moves` (a `ref` into `pool.json` plus
   `work`/`rest` seconds) and `rounds`.

@@ -153,10 +153,8 @@ TEMPLATE = r"""<!DOCTYPE html>
          border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:4px}
   .rhead b{font-size:clamp(13px,1.8vh,19px);font-weight:700}
   .rhead em{font-style:normal;color:var(--dim);font-size:.84em;white-space:nowrap}
-  .rmv{display:grid;grid-template-columns:clamp(46px,6vh,72px) 1fr;gap:clamp(8px,1.2vw,16px);
-       padding:clamp(5px,.9vh,11px) 0;border-bottom:1px solid #1a2231;align-items:start}
+  .rmv{display:block;padding:clamp(5px,.9vh,11px) 0;border-bottom:1px solid #1a2231}
   .rmv:last-child{border-bottom:0}
-  .rmv svg{width:100%;height:auto;display:block}
   .rmv .nm{font-weight:700;font-size:clamp(14px,1.9vh,21px)}
   .rmv .nm u{text-decoration:none;color:var(--dim);font-weight:600;font-size:.8em;
              margin-left:.6em;font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -187,8 +185,6 @@ TEMPLATE = r"""<!DOCTYPE html>
   #cue{color:#cdd6e4;font-size:clamp(16px,2.8vh,36px);max-width:38ch;margin-top:clamp(3px,1vh,14px);min-height:1.3em}
   #meta,#next{color:#b9c4d4;font-size:clamp(14px,2.1vh,24px)}
   #meta{margin-top:clamp(4px,1vh,12px)}
-  #runfig{display:none;margin:clamp(2px,.8vh,12px) auto 0;width:clamp(92px,15vh,190px);opacity:.95}
-  #runfig svg{width:100%;height:auto;display:block}
   #vidwrap{margin:clamp(4px,1vh,14px) 0;display:none}
   #vidwrap.on{display:block}
   iframe{width:100%;aspect-ratio:16/9;border:0;border-radius:14px;background:#000;max-height:52vh}
@@ -254,7 +250,6 @@ TEMPLATE = r"""<!DOCTYPE html>
     <div class="topline"><div id="blockName">&nbsp;</div><div id="hourClock">&nbsp;</div></div>
     <div id="stage">
       <div id="clock">0:00</div>
-      <div id="runfig"></div>
       <div id="moveName">&nbsp;</div>
       <div id="sub"></div>
       <div id="cue"></div>
@@ -398,7 +393,7 @@ function buildTimeline(day){
 
   WARM.moves.forEach((x,i)=>{
     const mv=POOL[x.ref], nx = WARM.moves[i+1] ? POOL[WARM.moves[i+1].ref].name : "the sun salutation class";
-    steps.push({block:"Warm-Up", kind:"work", label:mv.name, cue:mv.cue, dur:x.work, fig:mv.fig,
+    steps.push({block:"Warm-Up", kind:"work", label:mv.name, cue:mv.cue, dur:x.work,
                 round:1, rounds:1, idx:i+1, count:WARM.moves.length, next:nx, music:true});
     if(x.rest>0) steps.push({block:"Warm-Up", kind:"rest", label:"Change over", cue:"",
                 dur:x.rest, round:1, rounds:1, idx:i+1, count:WARM.moves.length, next:nx, music:true});
@@ -418,7 +413,7 @@ function buildTimeline(day){
     m.moves.forEach((x,i)=>{
       const mv=POOL[x.ref], last=(r===m.rounds && i===m.moves.length-1);
       const nx = m.moves[i+1] ? POOL[m.moves[i+1].ref].name : (r<m.rounds ? "Round "+(r+1) : "Cool-down");
-      steps.push({block:m.label, kind:"work", label:mv.name, cue:mv.cue, dur:x.work, fig:mv.fig,
+      steps.push({block:m.label, kind:"work", label:mv.name, cue:mv.cue, dur:x.work,
                   round:r, rounds:m.rounds, idx:i+1, count:m.moves.length, next:nx, music:true});
       if(x.rest>0 && !last) steps.push({block:m.label, kind:"rest", label:"Rest", cue:"Breathe.",
                   dur:x.rest, round:r, rounds:m.rounds, idx:i+1, count:m.moves.length,
@@ -437,7 +432,7 @@ function buildTimeline(day){
 
   COOL.moves.forEach((x,i)=>{
     const mv=POOL[x.ref];
-    steps.push({block:"Cool-Down", kind:"stretch", label:mv.name, cue:mv.cue, dur:x.work+x.rest, fig:mv.fig,
+    steps.push({block:"Cool-Down", kind:"stretch", label:mv.name, cue:mv.cue, dur:x.work+x.rest,
                 round:1, rounds:1, idx:i+1, count:COOL.moves.length,
                 next: COOL.moves[i+1] ? POOL[COOL.moves[i+1].ref].name : "the closing meditation", music:true});
   });
@@ -446,71 +441,13 @@ function buildTimeline(day){
   return steps;
 }
 
-/* ================= move pictograms ================= */
-/* Own schematic artwork. Each pool move carries [pose, motion, anchor] — a stick figure in
-   the move's body position, with the arrow drawn at the joint that actually travels (head,
-   arms, torso, hips, legs, feet). It shows POSITION and DIRECTION, not fine form: the cue
-   text and the demo link on each row carry the detail. */
-const POSES = {
-  standing: { art:"<circle cx='24' cy='9' r='3.7'/><path d='M24 13.5V27M24 16.5L17.5 24M24 16.5L30.5 24M24 27L19.5 39.5M24 27L28.5 39.5'/>",
-              at:{head:[24,9],shoulders:[24,15],torso:[24,21],arms:[30.5,23],hips:[24,27],legs:[26,33],feet:[26,39]}, lane:41 },
-  seated:   { art:"<circle cx='17' cy='11' r='3.6'/><path d='M17 15V25M17 25H30M30 25V36.5M30 36.5H34M17 18L24 23'/><path d='M12 27.5H33' stroke-dasharray='2 3.2' opacity='.5'/>",
-              at:{head:[17,11],shoulders:[17,16],torso:[17,21],arms:[24,23],hips:[17,25],legs:[26,25],feet:[32,36]}, lane:47 },
-  allfours: { art:"<circle cx='12' cy='15.5' r='3.4'/><path d='M15.5 17.5H31M17 18V31M28 18V31M30.5 18L37.5 24M37.5 24V32'/>",
-              at:{head:[12,15.5],shoulders:[17,18],torso:[24,18],arms:[17,25],hips:[30.5,18.5],legs:[34,22],feet:[37.5,31]}, lane:49 },
-  plank:    { art:"<circle cx='11' cy='15' r='3.4'/><path d='M13.5 17L39 24M16 18V31M22 19.5V32M39 24L43.5 30'/>",
-              at:{head:[11,15],shoulders:[16.5,18],torso:[25,20],arms:[16,25],hips:[31.5,21],legs:[36,23],feet:[41.5,27]}, lane:51 },
-  v:        { art:"<circle cx='12' cy='30' r='3.4'/><path d='M15 28L24 20L30.5 17.5M15 28L13 36.5M24 20L34 27M34 27L40.5 36.5M30.5 17.5L36 25'/>",
-              at:{head:[12,30],shoulders:[16.5,26],torso:[24,20],arms:[14,32],hips:[30.5,17.5],legs:[35,26],feet:[40.5,36]}, lane:49 },
-  floor:    { art:"<circle cx='16' cy='28' r='3.4'/><path d='M20.5 27L25 25L34 31.5M20.5 27L11 29M34 31.5L38.5 36'/>",
-              at:{head:[16,28],shoulders:[21,26],torso:[27,28],arms:[15,28.5],hips:[34,31.5],legs:[36.5,34],feet:[38.5,36]}, lane:47 },
-  supine:   { art:"<circle cx='10' cy='30' r='3.4'/><path d='M13.5 31H29M29 31L38.5 25M29 31L38.5 35.5M15.5 31L17.5 24M29 31L32 24.5'/>",
-              at:{head:[10,30],shoulders:[15.5,31],torso:[21,31],arms:[16.5,24.5],hips:[29,31],legs:[35,29],feet:[42,31]}, lane:49 },
-  prone:    { art:"<circle cx='11' cy='29' r='3.4'/><path d='M14.5 31H31M31 31H42M13 30L6 26M13 32L6 35'/>",
-              at:{head:[11,29],shoulders:[15.5,31],torso:[22,31],arms:[9,30],hips:[31,31],legs:[36,31],feet:[42,31]}, lane:49 },
-};
-const ARROW = "#7ee0a8";
-function headAt(x,y,dx,dy){ const n=Math.hypot(dx,dy)||1; dx/=n; dy/=n; const p=6.5,o=3.1;
-  return "<path d='M"+x.toFixed(1)+" "+y.toFixed(1)+"L"+(x-dx*p+dy*o).toFixed(1)+" "+(y-dy*p-dx*o).toFixed(1)
-       + "M"+x.toFixed(1)+" "+y.toFixed(1)+"L"+(x-dx*p-dy*o).toFixed(1)+" "+(y-dy*p+dx*o).toFixed(1)+"'/>"; }
-function arrowSVG(motion, a, lane){
-  /* Arrows live in a clear lane to the right of the figure, at the height of the joint
-     that moves, joined to it by a faint connector — so nothing is drawn over the body. */
-  const x = lane, yc = Math.max(10, Math.min(38, a[1]));
-  const go = { up:[0,-1], down:[0,1], out:[1,0], in:[-1,0], fwd:[0.76,-0.65], back:[-0.76,0.65] }[motion];
-  let body = "<path d='M"+a[0]+" "+a[1]+"L"+x+" "+yc+"' opacity='.45'/>";
-  if(go){
-    let x1,y1,x2,y2;
-    if(Math.abs(go[1]) > Math.abs(go[0])){ x1=x; y1=yc - go[1]*7;  x2=x; y2=yc + go[1]*6; }
-    else if(go[0] > 0){                     x1=x-1; y1=yc;          x2=x+10; y2=yc; }
-    else {                                  x1=x+10; y1=yc;         x2=x-1;  y2=yc; }
-    if(go[1] && go[0]){ x1=x-4; y1=yc+6; x2=x+7; y2=yc-6; if(go[1]>0){ const t=[x1,y1]; x1=x2; y1=y2; x2=t[0]; y2=t[1]; } }
-    body += "<path d='M"+x1.toFixed(1)+" "+y1.toFixed(1)+"L"+x2.toFixed(1)+" "+y2.toFixed(1)+"'/>"
-          + headAt(x2,y2,x2-x1,y2-y1);
-  } else if(motion==="circle" || motion==="twist"){
-    body += "<path d='M"+(x+5.5)+" "+yc+"a5.5 5.5 0 1 1-5 2.8'/>" + headAt(x+0.3,yc+2.8,-1,0.3);
-  } else {  /* hold */
-    body += "<circle cx='"+x+"' cy='"+yc+"' r='5.5'/><circle cx='"+x+"' cy='"+yc+"' r='1.4' fill='"+ARROW+"'/>";
-  }
-  return "<g stroke='"+ARROW+"' stroke-width='2.2' fill='none' stroke-linecap='round' stroke-linejoin='round'>"+body+"</g>";
-}
-function figSVG(fig, px){
-  const pose = (fig && POSES[fig[0]]) ? POSES[fig[0]] : POSES.standing;
-  const at = pose.at[(fig && fig[2]) || "torso"] || pose.at.torso;
-  return "<svg viewBox='0 0 64 48' width='"+(px||64)+"' role='img' aria-label='"+(fig?fig.join(" "):"")+"'>"
-       + "<g stroke='#cfe0ff' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'>"
-       + pose.art + "</g>" + arrowSVG((fig && fig[1]) || "hold", at, pose.lane || 45) + "</svg>";
-}
-function demoURL(name){
-  return "https://www.youtube.com/results?search_query="+encodeURIComponent(name+" exercise proper form");
-}
+/* ================= move rows ================= */
 function moveRow(mv, x){
   const d = x ? (x.work + (x.rest||0)) : 0;
-  return "<div class='rmv'>" + figSVG(mv.fig)
+  return "<div class='rmv'>"
     + "<div class='body'><div class='nm'>" + mv.name + (d ? "<u>" + fmt(d) + "</u>" : "") + "</div>"
     + "<div class='cue'>" + mv.cue + "</div>"
-    + "<div class='links'><a class='demo' href='" + demoURL(mv.name) + "' target='_blank' rel='noopener'>▶ see it done</a>"
-    + "<span class='rsum'>" + mv.pattern + " · " + mv.position + " · level " + mv.level + "</span></div>"
+    + "<div class='links'><span class='rsum'>" + mv.pattern + " · " + mv.position + " · level " + mv.level + "</span></div>"
     + "</div></div>";
 }
 function rsection(title, right, rows){
@@ -522,7 +459,7 @@ function routinePanel(day){
   out.push(rsection("Warm-Up", fmt(p.warm) + " · " + R.warmup.moves.length + " moves",
                     R.warmup.moves.map(x => moveRow(POOL[x.ref], x))));
   out.push(rsection("Sun Salutations", fmt(p.sun),
-    ["<div class='rmv'>" + figSVG(["floor","up"])
+    ["<div class='rmv'>"
      + "<div class='body'><div class='nm'>" + SUN.title + "<u>" + fmt(p.sun) + "</u></div>"
      + "<div class='cue'>" + SUN.channel + " — follow along and copy the rhythm; no timer during this block.</div>"
      + "<div class='links'><a class='demo' href='https://www.youtube.com/watch?v=" + SUN.video
@@ -534,7 +471,7 @@ function routinePanel(day){
   out.push(rsection("Cool-Down", fmt(p.cool) + " · " + COOL.moves.length + " stretches",
                     COOL.moves.map(x => moveRow(POOL[x.ref], x))));
   out.push(rsection("Closing meditation", fmt(p.settle),
-    ["<div class='rmv'>" + figSVG(["seated","hold"])
+    ["<div class='rmv'>"
      + "<div class='body'><div class='nm'>" + SETTLE.title + "<u>" + fmt(p.settle) + "</u></div>"
      + "<div class='cue'>" + SETTLE.channel + " — the same closing meditation every day.</div>"
      + "<div class='links'><a class='demo' href='https://www.youtube.com/watch?v=" + SETTLE.video
@@ -613,9 +550,6 @@ function enter(first){
   const s=st.steps[st.i], day=currentDay();
   $("blockName").textContent = s.block + (s.rounds>1 ? " · round "+s.round+"/"+s.rounds : "");
   $("moveName").textContent = s.label;
-  const fw = $("runfig");
-  if(s.fig){ fw.innerHTML = figSVG(s.fig, 190); fw.style.display = "block"; }
-  else { fw.innerHTML = ""; fw.style.display = "none"; }
   $("sub").textContent = s.sub || "";
   $("cue").textContent = s.cue || "";
   $("meta").textContent = s.count>1 ? ("move "+s.idx+" of "+s.count) : "";
