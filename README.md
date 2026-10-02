@@ -124,11 +124,20 @@ undo with a commit.
 
 ### How the page gets its data
 
-At boot the page fetches the committed `routines.json` and `pool.json` from
-`raw.githubusercontent.com` (cache-busted), so a save is live on the next load without waiting
-for the Pages rebuild. If the network is down — or the committed data is broken, e.g. a move
-`ref` that does not exist — it falls back to the copy baked into the HTML and says so under the
-menu. Airplane mode still runs the last built copy.
+`routines.json` carries an **`updated` stamp**, written by the editor on every save. Three copies
+can exist — the one baked into the HTML by the last build, the one GitHub serves, and the one this
+device saved moments ago — and the page picks the newest by that stamp:
+
+- GitHub's copy is adopted only when its stamp is **strictly newer** than the built copy's. A slow
+  CDN serving the previous file therefore can never roll the routines backwards; the page says
+  "GitHub is serving an older copy than this build — running the built one" when it sees that.
+- A save from **this device** is kept for 10 minutes and preferred while GitHub catches up, so the
+  person who just saved always sees their own edit.
+- If GitHub is unreachable, or its data is broken (a `ref` that does not exist, an empty pool), the
+  page falls back to the built copy and says why under the menu. Airplane mode runs the last build.
+
+Editing from this device is live on reload; other devices get it as soon as the CDN and the Pages
+build catch up, usually under a minute.
 
 ## Changing things by hand
 
