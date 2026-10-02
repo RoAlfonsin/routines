@@ -173,25 +173,6 @@ TEMPLATE = r"""<!DOCTYPE html>
   .blk em{font-style:normal;color:var(--dim);font-size:.82em;display:block}
   .blk u{text-decoration:none;font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600}
   .dot{display:inline-block;width:.6em;height:.6em;border-radius:99px;margin-right:.5em}
-  /* ---------- routine moves ---------- */
-  #routine{margin-top:clamp(10px,2vh,26px)}
-  .rsec{margin-bottom:clamp(10px,1.6vh,20px)}
-  .rhead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
-         border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:4px}
-  .rhead b{font-size:clamp(13px,1.8vh,19px);font-weight:700}
-  .rhead em{font-style:normal;color:var(--dim);font-size:.84em;white-space:nowrap}
-  .rmv{display:block;padding:clamp(5px,.9vh,11px) 0;border-bottom:1px solid #1a2231}
-  .rmv:last-child{border-bottom:0}
-  .rmv .nm{font-weight:700;font-size:clamp(14px,1.9vh,21px)}
-  .rmv .nm u{text-decoration:none;color:var(--dim);font-weight:600;font-size:.8em;
-             margin-left:.6em;font-variant-numeric:tabular-nums;white-space:nowrap}
-  .rmv .cue{color:#b9c4d4;font-size:clamp(12px,1.55vh,17px);margin-top:2px}
-  .rmv .links{margin-top:5px;display:flex;gap:14px;flex-wrap:wrap;align-items:baseline}
-  .rmv .links a{font-size:clamp(11px,1.45vh,15px);text-decoration:none;white-space:nowrap}
-  .rmv a.demo{color:var(--work)}
-  .rnote{color:var(--dim);font-size:clamp(11px,1.5vh,16px);text-align:center;
-         padding:clamp(4px,.7vh,9px) 0}
-  .rtitle{font-size:clamp(16px,2.3vh,26px);font-weight:800;margin:0 0 2px}
   .foot{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:auto;padding-top:clamp(10px,2vh,22px)}
   #startBtn{flex:1;min-width:240px;font-size:clamp(17px,2.4vh,26px);padding:clamp(14px,2.2vh,24px)}
   .tog{display:flex;gap:8px;align-items:center;color:var(--dim);font-size:.86em;cursor:pointer}
@@ -292,8 +273,6 @@ TEMPLATE = r"""<!DOCTYPE html>
     <h1>The Hour</h1>
     <div class="sub" id="tagline"></div>
     <div class="days" id="days"></div>
-    <div class="rtitle" style="margin-top:clamp(10px,2vh,24px)">The moves <span class="sub" style="margin:0">— every move in the selected routine, in order</span></div>
-    <div id="routine"></div>
     <div class="cols">
       <div><div class="sub" style="margin:0 0 4px">Today's hour</div><div id="blocks"></div></div>
       <div><div class="sub" style="margin:0 0 4px">Move pool</div><div id="poolInfo"></div></div>
@@ -606,52 +585,6 @@ function buildTimeline(day){
   return out;
 }
 
-/* ================= move rows ================= */
-function moveRow(mv, x){
-  const d = x ? (x.work + (x.rest||0)) : 0;
-  return "<div class='rmv'>"
-    + "<div class='body'><div class='nm'>" + mv.name + (d ? "<u>" + fmt(d) + "</u>" : "") + "</div>"
-    + "<div class='cue'>" + mv.cue + "</div>"
-    + "<div class='links'><span class='rsum'>" + mv.pattern + " · " + mv.position + " · level " + mv.level + "</span></div>"
-    + "</div></div>";
-}
-function rsection(title, right, rows){
-  return "<div class='rsec'><div class='rhead'><b>" + title + "</b><em>" + right + "</em></div>"
-       + rows.join("") + "</div>";
-}
-function videoRow(meta, dur, linkText, cue){
-  return "<div class='rmv'><div class='body'><div class='nm'>" + (meta.title||"") + "<u>" + fmt(dur) + "</u></div>"
-    + "<div class='cue'>" + cue + "</div>"
-    + "<div class='links'><a class='demo' href='https://www.youtube.com/watch?v=" + (meta.video||"")
-    + "' target='_blank' rel='noopener'>" + linkText + "</a></div></div></div>";
-}
-function moveRowsFor(day, key){
-  const cfg = cfgFor(day, key);
-  return ((cfg && cfg.moves) || []).map(x => moveRow(POOL[x.ref] || {name:x.ref, cue:"", pattern:"", position:"", level:""}, x));
-}
-const movesRight = b => (b.rounds>1 ? b.rounds+" rounds · " : "") + b.moves + (b.key==="cooldown" ? " stretches · " : " moves · ") + fmt(b.dur);
-function routinePanel(day){
-  const bl = blockList(day), out = [];
-  bl.forEach((b,i)=>{
-    const nx = bl[i+1];
-    if(b.key==="sun")
-      out.push(rsection("Sun Salutations", fmt(b.dur),
-        [videoRow(SUN, b.dur, "▶ open the class",
-                  (SUN.channel||"") + " — follow along and copy the rhythm; no timer during this block.")]));
-    else if(b.key==="settle")
-      out.push(rsection("Closing meditation", fmt(b.dur),
-        [videoRow(SETTLE, b.dur, "▶ open on YouTube",
-                  (SETTLE.channel||"") + " — the same closing meditation every day.")]));
-    else
-      out.push(rsection(b.block, movesRight(b), moveRowsFor(day,b.key)));
-    if(nx && b.key==="sun" && (TR.after_sun||0)>0)
-      out.push("<div class='rnote'>↓ transition · " + TR.after_sun + "s</div>");
-    if(nx && nx.key==="cooldown" && (TR.before_cooldown||0)>0)
-      out.push("<div class='rnote'>↓ transition · " + TR.before_cooldown + "s</div>");
-  });
-  return out.join("");
-}
-
 /* ================= menu ================= */
 let selId = R.days[0].id;
 const currentDay = () => R.days.find(d=>d.id===selId) || R.days[0];
@@ -696,8 +629,6 @@ function renderMenu(){
     + "<div class='blk'><div><b>Music</b><em>"+MUSIC.title+" · "+MUSIC.channel+"</em></div></div>"
     + "<div class='blk'><div><b>Sun class</b><em>"+SUN.title+"</em></div></div>";
   $("tagline").textContent = "One hour a day · warm-up seated to standing · sun salutation class · main routine · cool-down · closing meditation";
-  $("routine").innerHTML = "<div class='sub'>"+day.day+" · "+day.focus+" — "+day.main.label
-                         + " · "+fmt(p.total)+" total</div>" + routinePanel(day);
   $("startBtn").textContent="Start "+day.day+" · "+day.main.label;
   $("musicName").textContent = MUSIC.title+" · "+MUSIC.channel;
   $("vstatus").textContent = (durs.sun

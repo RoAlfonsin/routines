@@ -23,11 +23,12 @@ video block is on, then picks up again.
 
 ## Seeing the moves
 
-The menu lists **every move in the selected routine, in order** — warm-up, sun class, main
-circuit, cool-down, closing meditation — with its duration, its cue, and its pattern /
-position / level. The sun class and the closing meditation rows also link straight to their
-YouTube video. There are no pictograms and no per-move demo searches: the cue text is the
-instruction.
+The menu is deliberately short: the day cards (focus, main routine, total), **Today's hour**
+(one row per block with its length), the pool/music/sun-class summary, and the buttons. It no
+longer lists the moves — Rodri asked for the list to go once the editor existed. Moves are
+visible in **✎ Edit routines**, and the run screen shows each one as it comes up.
+
+There are no pictograms and no per-move demo searches: the cue text is the instruction.
 
 ## The week
 
