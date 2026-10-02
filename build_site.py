@@ -897,18 +897,47 @@ async function ghGet(path){
   if(!r.ok){
     const why = r.status===401 ? " — the token is wrong or expired"
               : r.status===404 ? " — the token cannot see this repo, or lacks Contents access"
+              : r.status===403 ? " — the token cannot read this repo's contents"
               : "";
     throw new Error("reading "+path+" failed (HTTP "+r.status+why+")");
   }
   return r.json();
+}
+/* A read-only token reads a public repo fine and only fails on the write, which is confusing.
+   The repo endpoint reports the token's own permissions, so the editor can say which it is. */
+async function ghRepoPerms(){
+  const r=await fetch("https://api.github.com/repos/"+REPO,{cache:"no-store",
+    headers:{Authorization:"Bearer "+getTok(), Accept:"application/vnd.github+json"}});
+  if(!r.ok) throw new Error("HTTP "+r.status+(r.status===401 ? " — the token is wrong or expired" : ""));
+  const j=await r.json();
+  return !!(j.permissions && j.permissions.push);
+}
+const READONLY_HINT = "this token can read "+REPO+" but not write to it. Open the token on GitHub and set "
+  + "Repository permissions → Contents to Read and write (choosing Public repositories as the repository access, "
+  + "or using a classic token without the repo scope, gives exactly this).";
+async function checkToken(){
+  const hint=$("editHint");
+  if(!getTok()){ hint.textContent="No token saved on this device yet — paste one in the box below."; return; }
+  hint.textContent="Checking the token…";
+  try{
+    hint.textContent = await ghRepoPerms()
+      ? "Token is good: it can write to "+REPO+"."
+      : "Not usable for saving — "+READONLY_HINT;
+  }catch(e){ hint.textContent="Could not check the token — "+e.message; }
 }
 async function ghPut(path,obj,message){
   const cur=await ghGet(path);                       /* fresh sha: never write against a stale one */
   const r=await fetch(APIURL(path),{method:"PUT",
     headers:{Authorization:"Bearer "+getTok(), Accept:"application/vnd.github+json","Content-Type":"application/json"},
     body:JSON.stringify({message, branch:BRANCH, sha:cur.sha, content:b64(JSON.stringify(obj,null,2)+"\n")})});
-  if(!r.ok){ const t=await r.text();
-    throw new Error("writing "+path+" failed (HTTP "+r.status+") "+t.slice(0,150)); }
+  if(!r.ok){
+    const t=await r.text();
+    const why = r.status===403 ? " — "+READONLY_HINT
+              : r.status===409 ? " — the file changed since it was read: reload the page and edit again"
+              : r.status===404 ? " — the token cannot see this repo, or the branch is missing"
+              : "";
+    throw new Error("writing "+path+" failed (HTTP "+r.status+why+") "+t.slice(0,120));
+  }
   return r.json();
 }
 
@@ -970,6 +999,8 @@ function renderEditor(){
     setTok(v); $("tokIn").value=""; renderEditor(); };
   const tf=$("tokForget");
   if(tf) tf.onclick=()=>{ setTok(""); renderEditor(); };
+  const tc=$("tokCheck");
+  if(tc) tc.onclick=checkToken;
   $("editHint").textContent = ED.dirty ? "Changes live only on this device until you save." : "";
 }
 function refreshEd(){
@@ -1120,14 +1151,20 @@ function tokenBoxHTML(){
   return "<div><b>GitHub access</b> — "+(has
       ? "a token is saved in this browser."
       : "no token on this device yet, so nothing can be saved.")+"</div>"
-    +"<div style='margin-top:5px'>Saving writes the JSON straight to <b>"+REPO+"</b>, which needs a token that can write to "
-    +"that one repo. Make a <b>fine-grained</b> token at github.com/settings/personal-access-tokens/new · "
-    +"Repository access → only <b>"+REPO+"</b> · Permissions → Repository permissions → <b>Contents: Read and write</b> · "
-    +"Expiration → 90 days. It is kept in this browser's storage only: never in the repo, never sent anywhere but api.github.com.</div>"
+    +"<div style='margin-top:5px'>Saving writes the JSON straight to <b>"+REPO+"</b>, which needs a token that can WRITE to "
+    +"that one repo. Make a <b>fine-grained</b> token at github.com/settings/personal-access-tokens/new:</div>"
+    +"<div style='margin-top:4px'>1 · Repository access → <b>Only select repositories</b> → add <b>"+REPO+"</b> "
+    +"(<i>Public repositories</i> is read-only and will not work)<br>"
+    +"2 · Permissions → Repository permissions → <b>Contents: Read and write</b><br>"
+    +"3 · Expiration → 90 days</div>"
+    +"<div style='margin-top:5px'>A <b>classic</b> token needs the <b>repo</b> scope; without it, reading this public "
+    +"repo still works and only saving fails with HTTP 403. The token is kept in this browser's storage only: never in "
+    +"the repo, never sent anywhere but api.github.com.</div>"
     +"<div style='margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center'>"
     +"<input id='tokIn' type='password' autocomplete='off' placeholder='github_pat_…' "
     +"style='flex:1;min-width:170px;background:#0e1014;color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:9px;font:inherit'>"
     +"<button class='ebtn' id='tokSave'>Save token</button>"
+    +(has ? "<button class='ebtn' id='tokCheck'>Check token</button>" : "")
     +(has ? "<button class='ebtn warn' id='tokForget'>Forget token</button>" : "")
     +"</div>";
 }
