@@ -597,13 +597,14 @@ function colorFor(name,day){
   if(name==="Cool-Down") return COL.stretch;
   return COL.work;
 }
+const roundsTxt = n => n + (n===1 ? " round · " : " rounds · ");
 function descFor(b,day){
   if(b.key==="settle") return (SETTLE.channel||"")+" · same every day";
   if(b.key==="sun") return (SUN.channel||"")+" · follow-along class";
   if(b.key==="warmup") return b.moves+" moves · seated to standing";
   if(b.key==="cooldown") return b.moves+" stretches";
-  if(b.key.indexOf("extra:")===0) return (b.rounds>1?b.rounds+" rounds · ":"")+b.moves+" moves";
-  return day.main.rounds+" rounds · "+day.main.moves.length+" moves · "+day.main.source;
+  if(b.key.indexOf("extra:")===0) return (b.rounds>1?roundsTxt(b.rounds):"")+b.moves+" moves";
+  return roundsTxt(day.main.rounds)+day.main.moves.length+" moves · "+day.main.source;
 }
 function renderMenu(){
   const box=$("days"); box.innerHTML="";
