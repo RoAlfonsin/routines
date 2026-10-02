@@ -76,18 +76,16 @@ def day_blocks(day):
 
 
 def audit():
-    """Report only. Timing is nominal by design; warn if a day drifts far."""
-    warnings = []
+    """Report only. Rodri tunes the length himself and does not want it policed; the
+    'vs 60:00' column is there so a drift is visible, not to warn about it."""
     print(f"{'day':<4} {'total':>7} {'vs 60:00':>9}  blocks")
     for d in R["days"]:
         bl = day_blocks(d)
         tot = sum(v for _, v in bl) + transitions_for(d)
-        if abs(tot - HOUR) > 420:
-            warnings.append(f"{d['id']}: total {tot}s is more than 7 minutes off an hour")
         cells = " ".join(f"{lbl} {v // 60}:{v % 60:02d}" for lbl, v in bl)
         print(f"{d['id']:<4} {tot // 60}:{tot % 60:02d}".rjust(12) + f" {tot - HOUR:+5d}s".rjust(9)
               + f"  {cells}")
-    return warnings
+    return []
 
 
 def build():
@@ -1206,8 +1204,7 @@ async function saveEdits(){
   if(!getTok()){ hint.textContent="Add a GitHub token first — see the box at the bottom."; return; }
   const problem=validateData(ED.routines,ED.poolFile);
   if(problem){ hint.textContent="Not saved — "+problem+"."; return; }
-  const off=ED.routines.days.filter(d=>Math.abs(plan(d,ED.routines).total-HOUR)>420)
-                           .map(d=>d.id+" "+fmt(plan(d,ED.routines).total));
+  /* Length is Rodri's call: no nag about a day being off the hour. */
   ED.routines.updated=new Date().toISOString();      /* the freshness stamp the page compares */
   /* A section with no moves in it contributes nothing and only confuses the menu: drop it. */
   let dropped=0;
@@ -1230,11 +1227,10 @@ async function saveEdits(){
     hint.textContent="Committed. Waiting for GitHub to serve the new file…";
     renderEditor();
     const ok=await waitForLive(wantR, wantP);
-    const tail = off.length ? " Heads up: "+off.join(", ")+" "+(off.length>1?"are":"is")+" more than 7 minutes off an hour." : "";
     const gone = dropped ? " (Dropped "+dropped+" empty section"+(dropped>1?"s":"")+" — a section with no moves does nothing.)" : "";
     hint.textContent = (ok
       ? "Live and saved to GitHub."
-      : "Saved. GitHub is still serving the old copy, but this device keeps showing your edit — a reload elsewhere may lag a minute.") + tail + gone;
+      : "Saved. GitHub is still serving the old copy, but this device keeps showing your edit — a reload elsewhere may lag a minute.") + gone;
     renderMenu();
   }catch(e){
     hint.textContent="Could not save — "+e.message;
