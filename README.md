@@ -82,7 +82,54 @@ _liked the circuit, sun class too fast_
 Reviews are also kept in the browser's localStorage (device-local); **Reviews** on the menu
 shows the recent ones.
 
-## Changing things
+## Editing the routines from the phone
+
+**✎ Edit routines** on the menu opens an editor that writes back to this repo. No server, no
+database: `routines.json` and `pool.json` stay the only source of truth, and the page talks
+straight to the GitHub Contents API.
+
+What you can do per day: change any move's **work and rest seconds**, **add or remove moves**
+(a picker over the whole pool, plus inventing a new move with its own cue), **reorder** them
+(↑ ↓), **change the number of rounds** and the rest between rounds, **add a section** (an extra
+circuit named what you like, with its own rounds and moves), and **take a section out** of a day
+— including the warm-up, the sun class, the cool-down and the closing meditation.
+
+Notes on the model:
+
+- **Warm-up, the sun class, the cool-down and the closing meditation are shared by every day.**
+  Editing them changes all seven days; the editor tags them *every day*. Only `main` and the
+  extra sections belong to a single day (*this day*).
+- A day can carry `skip: ["sun", "cooldown"]` (any of `warmup`, `sun`, `cooldown`, `settle`)
+  and `extra: [{label, rounds, rest_between_rounds, moves: [...]}]`, inserted after the main
+  circuit. A 15s transition only happens when the block it bridges is present.
+- A section with no moves is dropped on save — it does nothing.
+- Timing stays nominal: the editor prints each day's total and warns when a day drifts more
+  than 7 minutes from an hour. Nothing is forced onto an exact 60:00.
+
+Saving needs a write token, and it is the only credential anywhere in this setup:
+
+1. github.com/settings/personal-access-tokens/new — a **fine-grained** token.
+2. Repository access: **only RoAlfonsin/routines**.
+3. Repository permissions → **Contents: Read and write**. Nothing else.
+4. Expiration: 90 days (set a calendar reminder; an expired token just means the editor
+   refuses to save, reading the site is unaffected).
+5. Paste it into the box at the bottom of the editor, on the device you edit from. It is kept
+   in that browser's localStorage, never in the repo and never sent anywhere but
+   `api.github.com`. **Forget token** removes it.
+
+The tradeoff this design accepts: a token in browser storage is only as safe as the page, so
+scope it to one repo and let it expire. If it leaks, the worst case is a wrong routine you can
+undo with a commit.
+
+### How the page gets its data
+
+At boot the page fetches the committed `routines.json` and `pool.json` from
+`raw.githubusercontent.com` (cache-busted), so a save is live on the next load without waiting
+for the Pages rebuild. If the network is down — or the committed data is broken, e.g. a move
+`ref` that does not exist — it falls back to the copy baked into the HTML and says so under the
+menu. Airplane mode still runs the last built copy.
+
+## Changing things by hand
 
 - **Swap a meditation or the sun class:** change the `video` ID in `routines.json`
   (`settle` and `sun` are shared all week). Durations are measured at runtime.
@@ -90,6 +137,9 @@ shows the recent ones.
 - **Change a main routine:** edit that day's `main.moves` (a `ref` into `pool.json` plus
   `work`/`rest` seconds) and `rounds`.
 - **Add a move:** append to `pool.json` with a unique `id`, then reference it by `ref`.
+- **Rounds on the shared blocks:** `warmup` and `cooldown` take an optional
+  `rounds` / `rest_between_rounds` too, same as a main circuit. Both default to 1 round, which
+  is how they run today.
 
 ## Attribution
 

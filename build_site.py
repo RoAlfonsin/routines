@@ -33,36 +33,60 @@ TR_SECONDS = TR["after_sun"] + TR["before_cooldown"]
 REVIEW_THREAD = "1553973467496316948"
 
 
-def main_cost(m):
-    """Rounds + breaks, minus the rest the timeline drops after the very last move."""
-    per = sum(x["work"] + x["rest"] for x in m["moves"])
-    return per * m["rounds"] + m["rest_between_rounds"] * (m["rounds"] - 1) - m["moves"][-1]["rest"]
+def circuit_cost(m, drop_final_rest=False):
+    """Rounds + breaks. `drop_final_rest` mirrors the timeline, which emits no rest step
+    after the very last move of the very last round (a circuit) — warm-up and cool-down
+    keep every rest they declare."""
+    moves = m.get("moves") or []
+    if not moves:
+        return 0
+    rounds = m.get("rounds", 1)
+    cost = sum(x["work"] + x["rest"] for x in moves) * rounds
+    cost += m.get("rest_between_rounds", 0) * (rounds - 1)
+    return cost - (moves[-1]["rest"] if drop_final_rest else 0)
 
 
-def blocks(day):
-    return {
-        "Warm-Up": sum(m["work"] + m["rest"] for m in R["warmup"]["moves"]),
-        "Sun Salutations": SUN["nominal"] + TAIL,
-        day["main"]["label"]: main_cost(day["main"]),
-        "Cool-Down": sum(m["work"] + m["rest"] for m in R["cooldown"]["moves"]),
-        "Settle": SETTLE["nominal"] + TAIL,
-    }
+def transitions_for(day):
+    """The 15s transitions only happen when the blocks they bridge are present."""
+    skip = set(day.get("skip") or [])
+    t = 0
+    if "sun" not in skip:
+        t += TR["after_sun"]
+    if "cooldown" not in skip:
+        t += TR["before_cooldown"]
+    return t
+
+
+def day_blocks(day):
+    """Ordered [(label, seconds)] for one day, honouring skip[] and extra[]."""
+    skip = set(day.get("skip") or [])
+    out = []
+    if "warmup" not in skip:
+        out.append(("Warm-Up", circuit_cost(R["warmup"])))
+    if "sun" not in skip:
+        out.append(("Sun Salutations", SUN["nominal"] + TAIL))
+    out.append((day["main"]["label"], circuit_cost(day["main"], drop_final_rest=True)))
+    for i, ex in enumerate(day.get("extra") or []):
+        out.append((ex.get("label") or f"Extra {i + 1}", circuit_cost(ex, drop_final_rest=True)))
+    if "cooldown" not in skip:
+        out.append(("Cool-Down", circuit_cost(R["cooldown"])))
+    if "settle" not in skip:
+        out.append(("Settle", SETTLE["nominal"] + TAIL))
+    return out
 
 
 def audit():
     """Report only. Timing is nominal by design; warn if a day drifts far."""
     warnings = []
-    print(f"{'day':<4} {'warm':>6} {'sun':>6} {'main':>6} {'cool':>6} {'settle':>7} "
-          f"{'trans':>6} {'TOTAL':>7} {'vs 60:00':>9}")
+    print(f"{'day':<4} {'total':>7} {'vs 60:00':>9}  blocks")
     for d in R["days"]:
-        b = blocks(d)
-        tot = sum(b.values()) + TR_SECONDS
+        bl = day_blocks(d)
+        tot = sum(v for _, v in bl) + transitions_for(d)
         if abs(tot - HOUR) > 420:
             warnings.append(f"{d['id']}: total {tot}s is more than 7 minutes off an hour")
-        print(f"{d['id']:<4} " + " ".join(f"{v//60}:{v%60:02d}".rjust(6) for v in list(b.values())[:-1])
-              + f" {b['Settle']//60}:{b['Settle']%60:02d}".rjust(8)
-              + f" {TR_SECONDS}s".rjust(6)
-              + f" {tot//60}:{tot%60:02d}".rjust(7) + f" {tot-HOUR:+5d}s".rjust(9))
+        cells = " ".join(f"{lbl} {v // 60}:{v % 60:02d}" for lbl, v in bl)
+        print(f"{d['id']:<4} {tot // 60}:{tot % 60:02d}".rjust(12) + f" {tot - HOUR:+5d}s".rjust(9)
+              + f"  {cells}")
     return warnings
 
 
@@ -78,9 +102,12 @@ def build():
 
     data = {
         "pool": {m["id"]: m for m in POOL["moves"]},
+        "poolFile": POOL,
         "routines": R,
         "webhook": webhook,
         "thread": REVIEW_THREAD,
+        "repo": "RoAlfonsin/routines",
+        "branch": "main",
     }
     payload = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
 
@@ -218,6 +245,42 @@ TEMPLATE = r"""<!DOCTYPE html>
            padding:12px;font:inherit;min-height:clamp(60px,12vh,140px);margin-top:8px}
   .hist{font-size:.82em;color:var(--dim);margin-top:10px}
   .hist b{color:var(--txt)}
+  /* ---------- editor ---------- */
+  #edit{display:none;flex-direction:column;height:100%;overflow:auto}
+  #edit.on{display:flex}
+  .ecard{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+         padding:clamp(8px,1.4vh,14px) clamp(9px,1.5vw,16px);margin-bottom:clamp(6px,1.2vh,12px)}
+  .ehead{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .ehead b{font-size:clamp(14px,1.9vh,20px)}
+  .ehead em{font-style:normal;color:var(--dim);font-size:.8em;margin-left:auto;font-variant-numeric:tabular-nums}
+  .etag{font-size:.68em;color:var(--dim);border:1px solid var(--line);border-radius:99px;padding:1px 7px}
+  .erow{display:grid;grid-template-columns:1fr auto auto auto;gap:6px;align-items:center;
+        border-top:1px solid #1a2231;padding:clamp(4px,.8vh,9px) 0}
+  .erow .nm{font-size:clamp(12px,1.6vh,17px);font-weight:600}
+  .erow .nm i{font-style:normal;color:var(--dim);font-weight:400;font-size:.8em;display:block}
+  .erow .nm small{color:var(--dim);font-weight:400;font-size:.82em}
+  input.num{width:clamp(50px,7vw,72px);background:#0e1014;color:var(--txt);border:1px solid var(--line);
+            border-radius:9px;padding:6px 3px;text-align:center;font:inherit;font-size:clamp(12px,1.6vh,16px)}
+  .erow button,.ebtn{background:#0e1014;border:1px solid var(--line);color:var(--txt);border-radius:9px;
+      padding:6px 9px;font:inherit;font-size:clamp(12px,1.6vh,16px);cursor:pointer}
+  .ebtn.wide{width:100%;margin-top:8px}
+  .ebtn.warn{color:#fca5a5;border-color:#5b2a2a}
+  .estep{display:flex;align-items:center;gap:6px}
+  .estep span{min-width:1.5em;text-align:center;font-variant-numeric:tabular-nums}
+  #sheet{position:fixed;inset:0;background:rgba(4,6,10,.72);display:none;z-index:20;
+         align-items:flex-end;justify-content:center}
+  #sheet.on{display:flex}
+  #sheet .sheetInner{background:var(--panel);border:1px solid var(--line);border-radius:16px 16px 0 0;
+      width:min(680px,100%);max-height:86vh;display:flex;flex-direction:column;padding:14px}
+  .sheetHead{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  #sheetSearch{margin:10px 0;background:#0e1014;color:var(--txt);border:1px solid var(--line);
+      border-radius:10px;padding:10px;font:inherit}
+  #sheetList{overflow:auto;flex:1;min-height:0}
+  .pick{border-bottom:1px solid #1a2231;padding:9px 2px;display:flex;gap:10px;align-items:baseline;cursor:pointer}
+  .pick b{font-size:clamp(13px,1.7vh,18px)}
+  .pick span{color:var(--dim);font-size:.78em;margin-left:auto;white-space:nowrap}
+  .sheetNew{border-top:1px solid var(--line);margin-top:10px;padding-top:10px;display:grid;gap:8px}
+  .sheetNew input{background:#0e1014;color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:9px;font:inherit}
 </style>
 </head>
 <body>
@@ -240,8 +303,10 @@ TEMPLATE = r"""<!DOCTYPE html>
       <label class="tog"><input type="checkbox" id="voiceTog"> spoken move names</label>
       <label class="tog"><input type="checkbox" id="musicTog" checked> music between videos</label>
       <button id="histBtn">Reviews</button>
+      <button id="editBtn">✎ Edit routines</button>
     </div>
     <div id="vstatus"></div>
+    <div id="liveStatus" class="hist"></div>
   </div>
 
   <!-- ============ RUN ============ -->
@@ -285,15 +350,56 @@ TEMPLATE = r"""<!DOCTYPE html>
     <div class="hist" id="hist"></div>
   </div>
 
+  <!-- ============ EDIT ============ -->
+  <div id="edit">
+    <h1>Edit the routines</h1>
+    <div class="sub" id="editSub"></div>
+    <div class="days" id="editDays"></div>
+    <div id="editBody"></div>
+    <div class="foot">
+      <button class="primary" id="editSave">Save to GitHub</button>
+      <button id="editAddSection">＋ add a section</button>
+      <button id="editDiscard">Discard changes</button>
+      <button id="editBack">Back to the week</button>
+    </div>
+    <div class="hint" id="editHint"></div>
+    <div class="hist" id="tokenBox"></div>
+  </div>
+
+  <div id="sheet"><div class="sheetInner">
+    <div class="sheetHead"><b id="sheetTitle">Add a move</b><button class="ebtn" id="sheetClose">✕ close</button></div>
+    <input id="sheetSearch" placeholder="search the move pool…" autocomplete="off">
+    <div id="sheetList"></div>
+    <div class="sheetNew">
+      <div class="sub" style="margin:0">Not in the pool? Make it up.</div>
+      <input id="newName" placeholder="move name" autocomplete="off">
+      <input id="newCue" placeholder="cue — one line, the way you would say it" autocomplete="off">
+      <button class="ebtn" id="newAdd">Create it and add it to this section</button>
+    </div>
+  </div></div>
+
   <div id="musicHost"><div id="vpMusic"></div></div>
 </div>
 
 <script>
 const DATA = __DATA__;
-const POOL = DATA.pool, R = DATA.routines, HOUR = R.hour_seconds, TAIL = R.video_tail;
-const SUN = R.sun, SETTLE = R.settle, TR = R.transitions, MUSIC = R.music, WARM = R.warmup, COOL = R.cooldown;
-const TR_SECONDS = (TR.after_sun||0) + (TR.before_cooldown||0);
+const REPO = DATA.repo || "RoAlfonsin/routines", BRANCH = DATA.branch || "main";
 const WEBHOOK = DATA.webhook, THREAD = DATA.thread;
+/* The routines and the move pool are live data. At boot they are replaced by whatever is
+   committed on GitHub, so an edit lands on the phone without waiting for the Pages rebuild;
+   the baked-in copy stays as the offline fallback. The editor works on a copy of all this. */
+let POOL = DATA.pool, POOLFILE = DATA.poolFile, R = DATA.routines;
+let HOUR = 3600, TAIL = 0, SUN = {}, SETTLE = {}, TR = {}, MUSIC = {}, WARM = {}, COOL = {},
+    TR_SECONDS = 0;
+const indexPool = file => { const m = {}; (file.moves || []).forEach(x => { m[x.id] = x; }); return m; };
+function applyData(routines, poolFile){
+  R = routines; POOLFILE = poolFile; POOL = indexPool(poolFile);
+  HOUR = R.hour_seconds || 3600; TAIL = R.video_tail || 0;
+  SUN = R.sun || {}; SETTLE = R.settle || {}; TR = R.transitions || {}; MUSIC = R.music || {};
+  WARM = R.warmup || {moves: []}; COOL = R.cooldown || {moves: []};
+  TR_SECONDS = (TR.after_sun || 0) + (TR.before_cooldown || 0);
+}
+applyData(R, POOLFILE);
 const $ = id => document.getElementById(id);
 const fmt = s => { s=Math.max(0,Math.ceil(s)); return Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); };
 const sumMoves = ms => ms.reduce((a,x)=>a+x.work+x.rest,0);
@@ -376,69 +482,128 @@ function prefetch(day){
 }
 
 /* ================= timeline ================= */
-function mainCost(m){
-  const per = sumMoves(m.moves);
-  return per*m.rounds + m.rest_between_rounds*(m.rounds-1) - m.moves[m.moves.length-1].rest;
+/* A day is an ordered list of blocks. Warm-up, the sun class, the cool-down and the closing
+   meditation are shared by every day; the main circuit belongs to the day, and a day can
+   carry extra circuits of its own. Any block except the day's main circuit can be skipped. */
+
+const skipped = (day,key) => (day.skip||[]).indexOf(key) >= 0;
+
+function circuitCost(cfg, dropFinalRest){
+  const ms = (cfg && cfg.moves) || [];
+  if(!ms.length) return 0;
+  const rounds = cfg.rounds || 1;
+  let cost = ms.reduce((a,x)=>a+(x.work||0)+(x.rest||0),0)*rounds;
+  cost += (cfg.rest_between_rounds||0)*(rounds-1);
+  return cost - (dropFinalRest ? (ms[ms.length-1].rest||0) : 0);
 }
-function plan(day){
-  const sun    = (durs.sun    || SUN.nominal) + TAIL;
-  const settle = (durs.settle || SETTLE.nominal) + TAIL;
-  const warm = sumMoves(WARM.moves), cool = sumMoves(COOL.moves), main = mainCost(day.main);
-  return {warm, sun, main, cool, settle, tr:TR_SECONDS,
-          total: warm+sun+main+cool+settle+TR_SECONDS};
+function blockList(day, Rx){
+  Rx = Rx || R;
+  const W = Rx.warmup||{moves:[]}, C = Rx.cooldown||{moves:[]}, S = Rx.sun||{}, ST = Rx.settle||{};
+  const out=[];
+  if(!skipped(day,"warmup")) out.push({key:"warmup", block:"Warm-Up", kind:"warm", shared:true,
+        dur:circuitCost(W,false), moves:(W.moves||[]).length, rounds:W.rounds||1});
+  if(!skipped(day,"sun")) out.push({key:"sun", block:"Sun Salutations", kind:"yoga", shared:true,
+        video:true, dur:((durs.sun||S.nominal||0)+TAIL), moves:0, rounds:1});
+  out.push({key:"main", block:day.main.label, kind:"work", shared:false,
+        dur:circuitCost(day.main,true), moves:(day.main.moves||[]).length, rounds:day.main.rounds||1});
+  (day.extra||[]).forEach((ex,i)=>out.push({key:"extra:"+i, block:(ex.label||("Extra "+(i+1))),
+        kind:"work", shared:false, extra:i, dur:circuitCost(ex,true),
+        moves:(ex.moves||[]).length, rounds:ex.rounds||1}));
+  if(!skipped(day,"cooldown")) out.push({key:"cooldown", block:"Cool-Down", kind:"stretch", shared:true,
+        dur:circuitCost(C,false), moves:(C.moves||[]).length, rounds:C.rounds||1});
+  if(!skipped(day,"settle")) out.push({key:"settle", block:"Settle", kind:"meditation", shared:true,
+        video:true, dur:((durs.settle||ST.nominal||0)+TAIL), moves:0, rounds:1});
+  return out;
+}
+function cfgFor(day,key,Rx){
+  Rx = Rx || R;
+  if(key==="warmup") return Rx.warmup;
+  if(key==="cooldown") return Rx.cooldown;
+  if(key==="main") return day.main;
+  if(key.indexOf("extra:")===0) return (day.extra||[])[+key.slice(6)];
+  return null;
+}
+function transFor(day){
+  return (skipped(day,"sun") ? 0 : (TR.after_sun||0))
+       + (skipped(day,"cooldown") ? 0 : (TR.before_cooldown||0));
+}
+function plan(day,Rx){
+  const blocks=blockList(day,Rx), trans=transFor(day);
+  return {blocks, trans, total: blocks.reduce((a,b)=>a+b.dur,0)+trans};
+}
+function nextName(day, key, fallback){
+  const bl=blockList(day), i=bl.findIndex(b=>b.key===key);
+  if(i<0 || i+1>=bl.length) return fallback;
+  const n=bl[i+1];
+  if(n.key==="sun") return "the sun salutation class";
+  if(n.key==="settle") return "the closing meditation";
+  return n.block;
+}
+/* Rest steps come after every move except the very last of the last round of a circuit;
+   warm-up and cool-down keep every rest they declare. Stretches fold the rest into the hold. */
+function circuitSteps(cfg, block, kind, o){
+  const steps=[], ms=(cfg && cfg.moves) || [], rounds=(cfg && cfg.rounds) || 1;
+  for(let r=1;r<=rounds;r++){
+    ms.forEach((x,i)=>{
+      const mv = POOL[x.ref] || {name:x.ref, cue:""};
+      const nxt = ms[i+1] ? (POOL[ms[i+1].ref]||{}).name : (r<rounds ? "Round "+(r+1) : o.next);
+      const last = (r===rounds && i===ms.length-1);
+      const base = {block, round:r, rounds, idx:i+1, count:ms.length, next:nxt, music:o.music};
+      steps.push(Object.assign({}, base, {kind, label:mv.name, cue:mv.cue||"",
+        dur: o.mergeRest ? (x.work||0)+(x.rest||0) : (x.work||0)}));
+      if(!o.mergeRest && (x.rest||0)>0 && !(o.dropFinalRest && last))
+        steps.push(Object.assign({}, base, {kind:"rest", dur:x.rest,
+          label:o.restLabel||"Rest", cue:o.restCue||""}));
+    });
+    if((cfg.rest_between_rounds||0)>0 && r<rounds)
+      steps.push({block, kind:"rest", label:"Round "+r+" done", cue:"Shake it out, then go again.",
+                  dur:cfg.rest_between_rounds, round:r, rounds, idx:ms.length, count:ms.length,
+                  next:"Round "+(r+1)+(ms[0] ? " · "+((POOL[ms[0].ref]||{}).name||"") : ""),
+                  music:o.music});
+  }
+  return steps;
+}
+function blockSteps(day, b){
+  if(b.key==="warmup")
+    return circuitSteps(WARM, "Warm-Up", "work", {music:true, restLabel:"Change over",
+             next:nextName(day,"warmup","the sun salutation class")});
+  if(b.key==="cooldown")
+    return circuitSteps(COOL, "Cool-Down", "stretch", {music:true, mergeRest:true,
+             next:nextName(day,"cooldown","the closing meditation")});
+  if(b.key==="main")
+    return circuitSteps(day.main, day.main.label, "work",
+             {music:true, restLabel:"Rest", restCue:"Breathe.", dropFinalRest:true,
+              next:nextName(day,"main","the closing meditation")});
+  if(b.key.indexOf("extra:")===0)
+    return circuitSteps(cfgFor(day,b.key), b.block, "work",
+             {music:true, restLabel:"Rest", restCue:"Breathe.", dropFinalRest:true,
+              next:nextName(day,b.key,"the closing meditation")});
+  if(b.key==="sun")
+    return [{block:"Sun Salutations", kind:"yoga", label:SUN.title, sub:SUN.channel,
+             cue:"Follow along. Match your breath to hers — no timer, just rhythm.",
+             dur:b.dur, video:"sun", round:1, rounds:1}];
+  if(b.key==="settle")
+    return [{block:"Settle", kind:"meditation", label:SETTLE.title, sub:SETTLE.channel,
+             cue:"Same closing meditation every day. Sit down, close your eyes, follow the voice.",
+             dur:b.dur, video:"settle", round:1, rounds:1}];
+  return [];
 }
 function buildTimeline(day){
-  const p = plan(day), steps=[];
-  const V = (name,label,sub,cue,dur,which) => steps.push({block:name,kind:"meditation",label,sub,cue,dur,video:which,round:1,rounds:1});
-
-  WARM.moves.forEach((x,i)=>{
-    const mv=POOL[x.ref], nx = WARM.moves[i+1] ? POOL[WARM.moves[i+1].ref].name : "the sun salutation class";
-    steps.push({block:"Warm-Up", kind:"work", label:mv.name, cue:mv.cue, dur:x.work,
-                round:1, rounds:1, idx:i+1, count:WARM.moves.length, next:nx, music:true});
-    if(x.rest>0) steps.push({block:"Warm-Up", kind:"rest", label:"Change over", cue:"",
-                dur:x.rest, round:1, rounds:1, idx:i+1, count:WARM.moves.length, next:nx, music:true});
-  });
-
-  steps.push({block:"Sun Salutations", kind:"yoga", label:SUN.title, sub:SUN.channel,
-              cue:"Follow along. Match your breath to hers — no timer, just rhythm.",
-              dur:p.sun, video:"sun", round:1, rounds:1});
-
-  if(TR.after_sun>0)
-    steps.push({block:"Transition", kind:"rest", label:"Transition",
-                cue:"Shake out the sun salutations. "+TR.after_sun+" seconds, then the main routine.",
+  const parts=blockList(day).map(b=>({b, steps:blockSteps(day,b)})), out=[];
+  parts.forEach((p,i)=>{
+    out.push(...p.steps);
+    const nx=parts[i+1];
+    if(!nx) return;
+    if(p.b.key==="sun" && (TR.after_sun||0)>0)
+      out.push({block:"Transition", kind:"rest", label:"Transition",
+                cue:"Shake out the sun salutations. "+(TR.after_sun||0)+" seconds, then the main routine.",
                 dur:TR.after_sun, round:1, rounds:1, music:true});
-
-  const m = day.main;
-  for(let r=1;r<=m.rounds;r++){
-    m.moves.forEach((x,i)=>{
-      const mv=POOL[x.ref], last=(r===m.rounds && i===m.moves.length-1);
-      const nx = m.moves[i+1] ? POOL[m.moves[i+1].ref].name : (r<m.rounds ? "Round "+(r+1) : "Cool-down");
-      steps.push({block:m.label, kind:"work", label:mv.name, cue:mv.cue, dur:x.work,
-                  round:r, rounds:m.rounds, idx:i+1, count:m.moves.length, next:nx, music:true});
-      if(x.rest>0 && !last) steps.push({block:m.label, kind:"rest", label:"Rest", cue:"Breathe.",
-                  dur:x.rest, round:r, rounds:m.rounds, idx:i+1, count:m.moves.length,
-                  next: nx, music:true});
-    });
-    if(m.rest_between_rounds>0 && r<m.rounds)
-      steps.push({block:m.label, kind:"rest", label:"Round "+r+" done", cue:"Shake it out, then go again.",
-                  dur:m.rest_between_rounds, round:r, rounds:m.rounds, idx:m.moves.length, count:m.moves.length,
-                  next:"Round "+(r+1)+" · "+POOL[m.moves[0].ref].name, music:true});
-  }
-
-  if(TR.before_cooldown>0)
-    steps.push({block:"Transition", kind:"rest", label:"Transition",
-                cue:"Catch your breath. "+TR.before_cooldown+" seconds, then the cool-down.",
+    if(nx.b.key==="cooldown" && (TR.before_cooldown||0)>0)
+      out.push({block:"Transition", kind:"rest", label:"Transition",
+                cue:"Catch your breath. "+(TR.before_cooldown||0)+" seconds, then the cool-down.",
                 dur:TR.before_cooldown, round:1, rounds:1, music:true});
-
-  COOL.moves.forEach((x,i)=>{
-    const mv=POOL[x.ref];
-    steps.push({block:"Cool-Down", kind:"stretch", label:mv.name, cue:mv.cue, dur:x.work+x.rest,
-                round:1, rounds:1, idx:i+1, count:COOL.moves.length,
-                next: COOL.moves[i+1] ? POOL[COOL.moves[i+1].ref].name : "the closing meditation", music:true});
   });
-
-  V("Settle", SETTLE.title, SETTLE.channel, "Same closing meditation every day. Sit down, close your eyes, follow the voice.", p.settle, "settle");
-  return steps;
+  return out;
 }
 
 /* ================= move rows ================= */
@@ -454,28 +619,36 @@ function rsection(title, right, rows){
   return "<div class='rsec'><div class='rhead'><b>" + title + "</b><em>" + right + "</em></div>"
        + rows.join("") + "</div>";
 }
+function videoRow(meta, dur, linkText, cue){
+  return "<div class='rmv'><div class='body'><div class='nm'>" + (meta.title||"") + "<u>" + fmt(dur) + "</u></div>"
+    + "<div class='cue'>" + cue + "</div>"
+    + "<div class='links'><a class='demo' href='https://www.youtube.com/watch?v=" + (meta.video||"")
+    + "' target='_blank' rel='noopener'>" + linkText + "</a></div></div></div>";
+}
+function moveRowsFor(day, key){
+  const cfg = cfgFor(day, key);
+  return ((cfg && cfg.moves) || []).map(x => moveRow(POOL[x.ref] || {name:x.ref, cue:"", pattern:"", position:"", level:""}, x));
+}
+const movesRight = b => (b.rounds>1 ? b.rounds+" rounds · " : "") + b.moves + (b.key==="cooldown" ? " stretches · " : " moves · ") + fmt(b.dur);
 function routinePanel(day){
-  const p = plan(day), m = day.main, out = [];
-  out.push(rsection("Warm-Up", fmt(p.warm) + " · " + R.warmup.moves.length + " moves",
-                    R.warmup.moves.map(x => moveRow(POOL[x.ref], x))));
-  out.push(rsection("Sun Salutations", fmt(p.sun),
-    ["<div class='rmv'>"
-     + "<div class='body'><div class='nm'>" + SUN.title + "<u>" + fmt(p.sun) + "</u></div>"
-     + "<div class='cue'>" + SUN.channel + " — follow along and copy the rhythm; no timer during this block.</div>"
-     + "<div class='links'><a class='demo' href='https://www.youtube.com/watch?v=" + SUN.video
-     + "' target='_blank' rel='noopener'>▶ open the class</a></div></div></div>"]));
-  out.push("<div class='rnote'>↓ transition · " + TR.after_sun + "s</div>");
-  out.push(rsection(m.label, m.rounds + " rounds · " + m.moves.length + " moves · " + fmt(p.main),
-                    m.moves.map(x => moveRow(POOL[x.ref], x))));
-  out.push("<div class='rnote'>↓ transition · " + TR.before_cooldown + "s</div>");
-  out.push(rsection("Cool-Down", fmt(p.cool) + " · " + COOL.moves.length + " stretches",
-                    COOL.moves.map(x => moveRow(POOL[x.ref], x))));
-  out.push(rsection("Closing meditation", fmt(p.settle),
-    ["<div class='rmv'>"
-     + "<div class='body'><div class='nm'>" + SETTLE.title + "<u>" + fmt(p.settle) + "</u></div>"
-     + "<div class='cue'>" + SETTLE.channel + " — the same closing meditation every day.</div>"
-     + "<div class='links'><a class='demo' href='https://www.youtube.com/watch?v=" + SETTLE.video
-     + "' target='_blank' rel='noopener'>▶ open on YouTube</a></div></div></div>"]));
+  const bl = blockList(day), out = [];
+  bl.forEach((b,i)=>{
+    const nx = bl[i+1];
+    if(b.key==="sun")
+      out.push(rsection("Sun Salutations", fmt(b.dur),
+        [videoRow(SUN, b.dur, "▶ open the class",
+                  (SUN.channel||"") + " — follow along and copy the rhythm; no timer during this block.")]));
+    else if(b.key==="settle")
+      out.push(rsection("Closing meditation", fmt(b.dur),
+        [videoRow(SETTLE, b.dur, "▶ open on YouTube",
+                  (SETTLE.channel||"") + " — the same closing meditation every day.")]));
+    else
+      out.push(rsection(b.block, movesRight(b), moveRowsFor(day,b.key)));
+    if(nx && b.key==="sun" && (TR.after_sun||0)>0)
+      out.push("<div class='rnote'>↓ transition · " + TR.after_sun + "s</div>");
+    if(nx && nx.key==="cooldown" && (TR.before_cooldown||0)>0)
+      out.push("<div class='rnote'>↓ transition · " + TR.before_cooldown + "s</div>");
+  });
   return out.join("");
 }
 
@@ -491,11 +664,12 @@ function colorFor(name,day){
   if(name==="Cool-Down") return COL.stretch;
   return COL.work;
 }
-function descFor(name,day){
-  if(name==="Settle") return SETTLE.channel+" · same every day";
-  if(name==="Sun Salutations") return SUN.channel+" · follow-along class";
-  if(name==="Warm-Up") return WARM.moves.length+" moves · seated to standing";
-  if(name==="Cool-Down") return COOL.moves.length+" stretches";
+function descFor(b,day){
+  if(b.key==="settle") return (SETTLE.channel||"")+" · same every day";
+  if(b.key==="sun") return (SUN.channel||"")+" · follow-along class";
+  if(b.key==="warmup") return b.moves+" moves · seated to standing";
+  if(b.key==="cooldown") return b.moves+" stretches";
+  if(b.key.indexOf("extra:")===0) return (b.rounds>1?b.rounds+" rounds · ":"")+b.moves+" moves";
   return day.main.rounds+" rounds · "+day.main.moves.length+" moves · "+day.main.source;
 }
 function renderMenu(){
@@ -508,13 +682,11 @@ function renderMenu(){
     box.appendChild(b);
   });
   const day=currentDay();
-  const keys=["Warm-Up","Sun Salutations",day.main.label,"Cool-Down","Settle"];
   const p=plan(day);
-  const vals=[p.warm,p.sun,p.main,p.cool,p.settle];
   const box2=$("blocks"); box2.innerHTML="";
-  keys.forEach((k,i)=>{
+  p.blocks.forEach(b=>{
     const div=document.createElement("div"); div.className="blk";
-    div.innerHTML="<div><b><span class='dot' style='background:"+colorFor(k,day)+"'></span>"+k+"</b><em>"+descFor(k,day)+"</em></div><u>"+fmt(vals[i])+"</u>";
+    div.innerHTML="<div><b><span class='dot' style='background:"+colorFor(b.block,day)+"'></span>"+b.block+"</b><em>"+descFor(b,day)+"</em></div><u>"+fmt(b.dur)+"</u>";
     box2.appendChild(div);
   });
   const tot=document.createElement("div"); tot.className="blk";
@@ -658,7 +830,12 @@ const save=a=>{ try{localStorage.setItem(RKEY,JSON.stringify(a));}catch(e){} };
 const today=()=>new Date().toISOString().slice(0,10);
 let draft={overall:0,blocks:{},note:""};
 
-function blockKeys(day){ return ["Warm-Up","Sun Salutations",day.main.label,"Cool-Down","Settle"]; }
+function blockKeys(day){ return blockList(day).map(b=>b.block); }
+function shortOf(label){
+  if(SHORT[label]) return SHORT[label];
+  const w=(label||"block").split(/[\s·&]+/)[0];
+  return w.length>9 ? w.slice(0,9) : w;
+}
 function starsFor(key,n,onPick){
   const wrap=document.createElement("div"); wrap.className="stars";
   for(let i=1;i<=5;i++){
@@ -697,7 +874,7 @@ const SHORT={ "Arrive":"Arrive", "Warm-Up":"WarmUp", "Sun Salutations":"Sun",
 function reviewText(day){
   const lines=["📋 **"+day.day+" review — "+today()+"**",
                "Overall **"+"★".repeat(draft.overall)+"☆".repeat(5-draft.overall)+"** ("+draft.overall+"/5)"];
-  const parts=blockKeys(day).map(k=>((SHORT[k]||"Main")+": "+(draft.blocks[k]||"-"))).join(" · ");
+  const parts=blockKeys(day).map(k=>((SHORT[k]||shortOf(k))+" : "+(draft.blocks[k]||"-"))).join(" · ");
   lines.push(parts);
   if(draft.note.trim()) lines.push("_" + draft.note.trim() + "_");
   return lines.join("\n");
@@ -731,6 +908,350 @@ $("histBtn").onclick=()=>{ $("menu").style.display="none"; $("rate").classList.a
   $("rateTitle").textContent="Your reviews"; $("rateSub").textContent="Stored on this device.";
   $("rateRows").innerHTML=""; $("hist").innerHTML=reviewHistoryHTML()||"<div>No reviews yet.</div>"; };
 
+/* ================= editor ================= */
+/* Edits happen on a working copy in memory. Save commits routines.json — and pool.json when a
+   move was invented — straight to GitHub with a token that lives only in this browser. No
+   server, no database: the repo stays the one source of truth, and CI rebuilds the offline copy. */
+const TOKKEY="fitness.gh.token";
+const getTok=()=>{ try{ return localStorage.getItem(TOKKEY)||""; }catch(e){ return ""; } };
+const setTok=t=>{ try{ t ? localStorage.setItem(TOKKEY,t) : localStorage.removeItem(TOKKEY); }catch(e){} };
+const clone=o=>JSON.parse(JSON.stringify(o));
+const RAWURL=n=>"https://raw.githubusercontent.com/"+REPO+"/"+BRANCH+"/"+n;
+const APIURL=p=>"https://api.github.com/repos/"+REPO+"/contents/"+p;
+const SKIPKEYS=["warmup","sun","cooldown","settle"];
+const SKIPNAME={warmup:"the warm-up", sun:"the sun salutation class",
+                cooldown:"the cool-down", settle:"the closing meditation"};
+let ED=null;
+
+function validateData(routines,poolFile){
+  const bad=[];
+  if(!routines || !Array.isArray(routines.days) || !routines.days.length) bad.push("routines.json has no days");
+  if(!poolFile || !Array.isArray(poolFile.moves) || !poolFile.moves.length) bad.push("the move pool is empty");
+  if(bad.length) return bad.join("; ");
+  const ids={};
+  poolFile.moves.forEach(m=>{ if(m && m.id) ids[m.id]=1; else bad.push("a move has no id"); });
+  [["the warm-up",routines.warmup],["the cool-down",routines.cooldown]].forEach(pair=>{
+    const name=pair[0], c=pair[1];
+    if(!c || !Array.isArray(c.moves)){ bad.push(name+" is missing"); return; }
+    c.moves.forEach(x=>{ if(!ids[x.ref]) bad.push(name+" uses unknown move "+x.ref); });
+  });
+  routines.days.forEach(d=>{
+    if(!d.main || !d.main.label || !Array.isArray(d.main.moves)){ bad.push((d.id||"?")+" has no main circuit"); return; }
+    if(!(d.main.rounds>=1)) d.main.rounds=1;
+    d.main.moves.forEach(x=>{ if(!ids[x.ref]) bad.push(d.id+" uses unknown move "+x.ref); });
+    (d.extra||[]).forEach((ex,i)=>{
+      if(!Array.isArray(ex.moves)){ bad.push(d.id+" section "+(i+1)+" has no moves list"); return; }
+      ex.moves.forEach(x=>{ if(!ids[x.ref]) bad.push(d.id+" section "+(i+1)+" uses unknown move "+x.ref); });
+    });
+    (d.skip||[]).forEach(k=>{ if(SKIPKEYS.indexOf(k)<0) bad.push(d.id+" skips something unknown: "+k); });
+  });
+  return bad.length ? bad.slice(0,4).join("; ") : null;
+}
+async function fetchJSON(url){
+  const r=await fetch(url+(url.indexOf("?")<0?"?":"&")+"t="+Date.now(),{cache:"no-store"});
+  if(!r.ok) throw new Error("HTTP "+r.status);
+  return r.json();
+}
+async function loadLive(){
+  const both=await Promise.all([fetchJSON(RAWURL("routines.json")), fetchJSON(RAWURL("pool.json"))]);
+  const problem=validateData(both[0],both[1]);
+  if(problem) throw new Error(problem);
+  return {routines:both[0], poolFile:both[1]};
+}
+function b64(s){ const b=new TextEncoder().encode(s); let bin="";
+  for(let i=0;i<b.length;i++) bin+=String.fromCharCode(b[i]); return btoa(bin); }
+async function ghGet(path){
+  const r=await fetch(APIURL(path)+"?ref="+BRANCH,{cache:"no-store",
+    headers:{Authorization:"Bearer "+getTok(), Accept:"application/vnd.github+json"}});
+  if(!r.ok){
+    const why = r.status===401 ? " — the token is wrong or expired"
+              : r.status===404 ? " — the token cannot see this repo, or lacks Contents access"
+              : "";
+    throw new Error("reading "+path+" failed (HTTP "+r.status+why+")");
+  }
+  return r.json();
+}
+async function ghPut(path,obj,message){
+  const cur=await ghGet(path);                       /* fresh sha: never write against a stale one */
+  const r=await fetch(APIURL(path),{method:"PUT",
+    headers:{Authorization:"Bearer "+getTok(), Accept:"application/vnd.github+json","Content-Type":"application/json"},
+    body:JSON.stringify({message, branch:BRANCH, sha:cur.sha, content:b64(JSON.stringify(obj,null,2)+"\n")})});
+  if(!r.ok){ const t=await r.text();
+    throw new Error("writing "+path+" failed (HTTP "+r.status+") "+t.slice(0,150)); }
+  return r.json();
+}
+
+const clampNum=(v,lo,hi)=>{ let n=Math.round(+v); if(isNaN(n)) n=lo; return Math.max(lo,Math.min(hi,n)); };
+const edDay=()=>ED.routines.days.filter(d=>d.id===ED.dayId)[0] || ED.routines.days[0];
+const edPool=()=>indexPool(ED.poolFile);
+const edName=ref=>{ const m=edPool()[ref]; return m ? m.name : ref; };
+const edCfg=key=>cfgFor(edDay(),key,ED.routines);
+const markDirty=()=>{ ED.dirty=true; };
+
+function openEditor(){
+  ED={routines:clone(R), poolFile:clone(POOLFILE), dayId:selId, dirty:false, poolDirty:false, sheet:null};
+  $("menu").style.display="none"; $("run").style.display="none";
+  $("rate").classList.remove("on"); $("edit").classList.add("on");
+  renderEditor();
+}
+function closeEditor(){
+  ED=null; $("edit").classList.remove("on"); $("sheet").classList.remove("on");
+  $("menu").style.display="flex"; renderMenu();
+}
+const edRight=b=>fmt(b.dur)+(b.key==="sun"||b.key==="settle" ? "" : " · "+b.moves+" moves");
+function edSubLine(){
+  const day=edDay();
+  return day.day+" · "+day.focus+" · "+fmt(plan(day,ED.routines).total)
+    +" nominal — the sun class and the closing meditation take their real length at run time.";
+}
+function renderEditor(){
+  if(!ED) return;
+  const day=edDay(), bl=blockList(day,ED.routines);
+  $("editSub").textContent=edSubLine();
+  const chips=$("editDays"); chips.innerHTML="";
+  ED.routines.days.forEach(d=>{
+    const b=document.createElement("button");
+    b.className="day"+(d.id===ED.dayId?" on":"");
+    b.innerHTML="<b>"+d.day.slice(0,3)+"</b><span>"+d.main.label+"</span><span>"+fmt(plan(d,ED.routines).total)+"</span>";
+    b.onclick=()=>{ ED.dayId=d.id; renderEditor(); };
+    chips.appendChild(b);
+  });
+  const body=$("editBody"); body.innerHTML="";
+  bl.forEach(b=>body.appendChild(edCard(b)));
+  const gone=SKIPKEYS.filter(k=>skipped(day,k));
+  if(gone.length){
+    const box=document.createElement("div"); box.className="ecard";
+    box.innerHTML="<div class='ehead'><b>Not in this day</b><em>removed</em></div>";
+    gone.forEach(k=>{
+      const btn=document.createElement("button"); btn.className="ebtn wide";
+      btn.textContent="＋ put "+SKIPNAME[k]+" back";
+      btn.onclick=()=>{ day.skip=day.skip.filter(x=>x!==k); if(!day.skip.length) delete day.skip;
+                        markDirty(); renderEditor(); };
+      box.appendChild(btn);
+    });
+    body.appendChild(box);
+  }
+  refreshEd();
+  $("tokenBox").innerHTML=tokenBoxHTML();
+  const ts=$("tokSave");
+  if(ts) ts.onclick=()=>{ const v=$("tokIn").value.trim();
+    if(!v){ $("tokIn").placeholder="paste the token first"; return; }
+    setTok(v); $("tokIn").value=""; renderEditor(); };
+  const tf=$("tokForget");
+  if(tf) tf.onclick=()=>{ setTok(""); renderEditor(); };
+  $("editHint").textContent = ED.dirty ? "Changes live only on this device until you save." : "";
+}
+function refreshEd(){
+  if(!ED) return;
+  const day=edDay();
+  blockList(day,ED.routines).forEach(b=>{ const el=$("edh:"+b.key); if(el) el.textContent=edRight(b); });
+  const bl=blockList(day,ED.routines);
+  const t=$("edTotal");
+  if(t) t.innerHTML="<div class='ehead'><b>Total</b><em>"+fmt(plan(day,ED.routines).total)+"</em></div>";
+  $("editSub").textContent=edSubLine();
+  const chips=$("editDays").children;
+  ED.routines.days.forEach((d,i)=>{ const c=chips[i];
+    if(c && c.children[2]) c.children[2].textContent=fmt(plan(d,ED.routines).total); });
+}
+function edCard(b){
+  const day=edDay(), card=document.createElement("div"); card.className="ecard";
+  const head=document.createElement("div"); head.className="ehead";
+  head.innerHTML="<b>"+b.block+"</b>"
+    +"<span class='etag'>"+(b.shared?"every day":"this day")+"</span>"
+    +"<em id='edh:"+b.key+"'>"+edRight(b)+"</em>";
+  card.appendChild(head);
+  const isCircuit = b.key==="warmup" || b.key==="cooldown" || b.key==="main" || b.key.indexOf("extra:")===0;
+  if(isCircuit){
+    const cfg=edCfg(b.key);
+    const row=document.createElement("div"); row.className="ehead"; row.style.marginTop="8px";
+    const step=document.createElement("div"); step.className="estep";
+    const minus=document.createElement("button"); minus.className="ebtn"; minus.textContent="−";
+    const val=document.createElement("span"); val.textContent=(cfg.rounds||1)+"×";
+    const plus=document.createElement("button"); plus.className="ebtn"; plus.textContent="+";
+    minus.onclick=()=>{ const n=(cfg.rounds||1)-1; if(n<=1) delete cfg.rounds; else cfg.rounds=n;
+                        markDirty(); renderEditor(); };
+    plus.onclick=()=>{ cfg.rounds=Math.min(20,(cfg.rounds||1)+1); markDirty(); renderEditor(); };
+    step.appendChild(minus); step.appendChild(val); step.appendChild(plus);
+    row.appendChild(step);
+    if((cfg.rounds||1)>1){
+      const lbl=document.createElement("span"); lbl.className="etag"; lbl.textContent="rest between rounds";
+      const inp=document.createElement("input"); inp.type="number"; inp.inputMode="numeric"; inp.className="num";
+      inp.value=(cfg.rest_between_rounds||0); inp.title="seconds between rounds";
+      inp.onchange=()=>{ cfg.rest_between_rounds=clampNum(inp.value,0,600); markDirty(); refreshEd(); };
+      row.appendChild(lbl); row.appendChild(inp);
+    }
+    card.appendChild(row);
+    const hdr=document.createElement("div"); hdr.className="erow"; hdr.style.borderTop="0";
+    hdr.innerHTML="<div class='nm'><small>move</small></div><div class='nm'><small>work″</small></div>"
+      +"<div class='nm'><small>rest″</small></div><div></div>";
+    card.appendChild(hdr);
+    (cfg.moves||[]).forEach((x,i)=>{
+      const r=document.createElement("div"); r.className="erow";
+      const nm=document.createElement("div"); nm.className="nm";
+      nm.innerHTML=edName(x.ref)+"<i>"+(edPool()[x.ref]||{}).cue+"</i>";
+      const w=document.createElement("input"); w.type="number"; w.inputMode="numeric"; w.className="num";
+      w.value=(x.work||0); w.onchange=()=>{ x.work=clampNum(w.value,0,600); markDirty(); refreshEd(); };
+      const rst=document.createElement("input"); rst.type="number"; rst.inputMode="numeric"; rst.className="num";
+      rst.value=(x.rest||0); rst.onchange=()=>{ x.rest=clampNum(rst.value,0,600); markDirty(); refreshEd(); };
+      const ctl=document.createElement("div"); ctl.className="estep";
+      [["↑",-1],["↓",1]].forEach(pair=>{
+        const b2=document.createElement("button"); b2.className="ebtn"; b2.textContent=pair[0];
+        b2.onclick=()=>edShift(b.key,i,pair[1]); ctl.appendChild(b2);
+      });
+      const del=document.createElement("button"); del.className="ebtn warn"; del.textContent="✕";
+      del.onclick=()=>{ cfg.moves.splice(i,1); markDirty(); renderEditor(); };
+      ctl.appendChild(del);
+      r.appendChild(nm); r.appendChild(w); r.appendChild(rst); r.appendChild(ctl);
+      card.appendChild(r);
+    });
+    const add=document.createElement("button"); add.className="ebtn wide";
+    add.textContent="＋ add a move to "+b.block;
+    add.onclick=()=>openSheet(b.key);
+    card.appendChild(add);
+  } else {
+    const p=document.createElement("div"); p.className="cue"; p.style.marginTop="6px";
+    p.textContent = b.key==="sun" ? (SUN.channel||"") : (SETTLE.channel||"");
+    card.appendChild(p);
+  }
+  const foot=document.createElement("button"); foot.className="ebtn wide"+(b.key.indexOf("extra:")===0?" warn":"");
+  if(b.key.indexOf("extra:")===0){
+    foot.textContent="✕ remove this section from "+day.day;
+    foot.onclick=()=>{ day.extra.splice(b.extra,1); if(!day.extra.length) delete day.extra;
+                       markDirty(); renderEditor(); };
+  } else {
+    foot.textContent="✕ take "+b.block+" out of "+day.day;
+    foot.onclick=()=>{ day.skip=(day.skip||[]).concat([b.key]); markDirty(); renderEditor(); };
+  }
+  card.appendChild(foot);
+  return card;
+}
+function edShift(key,i,dir){
+  const ms=edCfg(key).moves, j=i+dir;
+  if(j<0 || j>=ms.length) return;
+  const t=ms[i]; ms[i]=ms[j]; ms[j]=t; markDirty(); renderEditor();
+}
+function edAddMove(key,ref){
+  const cfg=edCfg(key);
+  if(!cfg) return;
+  cfg.moves.push({ref, work:40, rest:(key==="cooldown"?0:15)});
+  markDirty(); renderEditor();
+}
+function edNewMove(name,cue){
+  const base=(name||"move").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"") || "move";
+  let id=base, n=2, have=edPool();
+  while(have[id]){ id=base+"-"+(n++); }
+  ED.poolFile.moves.push({id, name:name, pattern:"mobility", position:"standing", impact:"low",
+                          level:1, unit:"reps", default:10, cue:cue||"", from:"Rodri"});
+  ED.poolDirty=true;
+  return id;
+}
+function edAddSection(){
+  const day=edDay();
+  const label=window.prompt("Name for the new section (for example: Abs finisher)","");
+  if(label===null) return;
+  const clean=(label||"").trim() || ("Extra "+(((day.extra||[]).length)+1));
+  day.extra=(day.extra||[]).concat([{label:clean, rounds:1, rest_between_rounds:0, moves:[]}]);
+  markDirty(); renderEditor();
+}
+
+/* ---------- move picker ---------- */
+function openSheet(addTo){
+  ED.sheet={addTo};
+  const b=blockList(edDay(),ED.routines).filter(x=>x.key===addTo)[0];
+  $("sheetTitle").textContent="Add a move to "+(b?b.block:addTo);
+  $("sheetSearch").value="";
+  renderSheet("");
+  $("sheet").classList.add("on");
+  try{ $("sheetSearch").focus(); }catch(e){}
+}
+function renderSheet(q){
+  const list=$("sheetList"), pool=edPool();
+  const cfg=edCfg(ED.sheet.addTo), used=((cfg&&cfg.moves)||[]).map(x=>x.ref);
+  const ql=(q||"").toLowerCase();
+  list.innerHTML="";
+  const moves=Object.keys(pool).map(k=>pool[k]).filter(m=>{
+    const hay=(m.name+" "+(m.pattern||"")+" "+(m.position||"")+" "+(m.impact||"")).toLowerCase();
+    return !ql || hay.indexOf(ql)>=0;
+  }).sort((a,b)=>(used.indexOf(a.id)>=0)-(used.indexOf(b.id)>=0) || a.name.localeCompare(b.name));
+  moves.forEach(m=>{
+    const d=document.createElement("div"); d.className="pick";
+    d.innerHTML="<b>"+m.name+(used.indexOf(m.id)>=0?" ·":"")+"</b><span>"+(m.pattern||"")+" · "
+      +(m.position||"")+" · level "+(m.level||1)+"</span>";
+    d.onclick=()=>{ edAddMove(ED.sheet.addTo,m.id); $("sheet").classList.remove("on"); };
+    list.appendChild(d);
+  });
+  if(!list.children.length) list.innerHTML="<div class='pick'><b>Nothing in the pool matches that.</b></div>";
+}
+
+/* ---------- token ---------- */
+function tokenBoxHTML(){
+  const has=!!getTok();
+  return "<div><b>GitHub access</b> — "+(has
+      ? "a token is saved in this browser."
+      : "no token on this device yet, so nothing can be saved.")+"</div>"
+    +"<div style='margin-top:5px'>Saving writes the JSON straight to <b>"+REPO+"</b>, which needs a token that can write to "
+    +"that one repo. Make a <b>fine-grained</b> token at github.com/settings/personal-access-tokens/new · "
+    +"Repository access → only <b>"+REPO+"</b> · Permissions → Repository permissions → <b>Contents: Read and write</b> · "
+    +"Expiration → 90 days. It is kept in this browser's storage only: never in the repo, never sent anywhere but api.github.com.</div>"
+    +"<div style='margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center'>"
+    +"<input id='tokIn' type='password' autocomplete='off' placeholder='github_pat_…' "
+    +"style='flex:1;min-width:170px;background:#0e1014;color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:9px;font:inherit'>"
+    +"<button class='ebtn' id='tokSave'>Save token</button>"
+    +(has ? "<button class='ebtn warn' id='tokForget'>Forget token</button>" : "")
+    +"</div>";
+}
+
+/* ---------- save ---------- */
+async function waitForLive(wantR, wantP){
+  for(let i=0;i<20;i++){
+    try{
+      const live=await loadLive();
+      if(JSON.stringify(live.routines)===JSON.stringify(wantR) && JSON.stringify(live.poolFile)===JSON.stringify(wantP))
+        return true;
+    }catch(e){}
+    await new Promise(r=>setTimeout(r,3000));
+  }
+  return false;
+}
+async function saveEdits(){
+  const hint=$("editHint");
+  if(!ED) return;
+  if(!getTok()){ hint.textContent="Add a GitHub token first — see the box at the bottom."; return; }
+  const problem=validateData(ED.routines,ED.poolFile);
+  if(problem){ hint.textContent="Not saved — "+problem+"."; return; }
+  const off=ED.routines.days.filter(d=>Math.abs(plan(d,ED.routines).total-HOUR)>420)
+                           .map(d=>d.id+" "+fmt(plan(d,ED.routines).total));
+  /* A section with no moves in it contributes nothing and only confuses the menu: drop it. */
+  let dropped=0;
+  ED.routines.days.forEach(d=>{
+    if(!d.extra) return;
+    const keep=d.extra.filter(ex=>(ex.moves||[]).length);
+    dropped += d.extra.length - keep.length;
+    if(keep.length) d.extra=keep; else delete d.extra;
+  });
+  if(dropped) renderEditor();
+  hint.textContent="Saving…";
+  try{
+    await ghPut("routines.json", ED.routines, "The Hour: routine edits from the phone editor");
+    if(ED.poolDirty) await ghPut("pool.json", ED.poolFile, "The Hour: new moves from the phone editor");
+    const wantR=clone(ED.routines), wantP=clone(ED.poolFile);
+    ED.poolDirty=false;
+    applyData(clone(wantR), clone(wantP));      /* the app runs the new version right away */
+    ED.dirty=false;
+    hint.textContent="Committed. GitHub Pages is rebuilding (about 30s) — waiting for the live file…";
+    renderEditor();
+    const ok=await waitForLive(wantR, wantP);
+    const tail = off.length ? " Heads up: "+off.join(", ")+" "+(off.length>1?"are":"is")+" more than 7 minutes off an hour." : "";
+    const gone = dropped ? " (Dropped "+dropped+" empty section"+(dropped>1?"s":"")+" — a section with no moves does nothing.)" : "";
+    hint.textContent = (ok
+      ? "Live and saved to GitHub."
+      : "Committed, but GitHub is still serving the old file — reload in a minute.") + tail + gone;
+    renderMenu();
+  }catch(e){
+    hint.textContent="Could not save — "+e.message;
+  }
+}
+
 /* ================= controls ================= */
 $("startBtn").onclick=start;
 $("pauseBtn").onclick=()=>{ st.running=!st.running; st.last=performance.now(); };
@@ -749,9 +1270,48 @@ $("musicToggle").onclick=()=>{ if(!pMusic) return;
   if(playing){ try{pMusic.pauseVideo();}catch(e){} $("musicToggle").textContent="Play music"; }
   else { try{pMusic.unMute(); pMusic.setVolume(musicVol); pMusic.playVideo();}catch(e){} $("musicToggle").textContent="Pause music"; } };
 
-const TODAY = new Date().getDay();          // 0 Sun .. 6 Sat
-selId = R.days[(TODAY+6)%7].id;             // Monday-first week
-renderMenu();
+/* ================= editor wiring ================= */
+$("editBtn").onclick=openEditor;
+$("editBack").onclick=()=>{ if(ED && ED.dirty && !window.confirm("Leave without saving the changes on this device?")) return; closeEditor(); };
+$("editDiscard").onclick=()=>{
+  if(!ED) return;
+  if(!window.confirm("Throw away the changes on this device?")) return;
+  ED.routines=clone(R); ED.poolFile=clone(POOLFILE); ED.poolDirty=false; ED.dirty=false; renderEditor();
+};
+$("editSave").onclick=saveEdits;
+$("editAddSection").onclick=edAddSection;
+$("sheetClose").onclick=()=>$("sheet").classList.remove("on");
+$("sheetSearch").oninput=e=>renderSheet(e.target.value);
+$("newAdd").onclick=()=>{
+  const nm=$("newName").value.trim(), cue=$("newCue").value.trim();
+  if(!nm){ $("sheetSearch").placeholder="name the move above first"; return; }
+  const id=edNewMove(nm,cue);
+  edAddMove(ED.sheet.addTo,id);
+  $("newName").value=""; $("newCue").value="";
+  $("sheet").classList.remove("on");
+};
+
+/* ================= boot ================= */
+/* The committed JSON on GitHub wins over the copy baked into this file, so an edit is live as
+   soon as it is pushed, without waiting for the Pages rebuild. If GitHub cannot be reached — or
+   the committed data is broken — the baked copy runs and the menu says so. */
+async function boot(){
+  let note="Using the copy stored in this page.";
+  try{
+    const live=await loadLive();
+    applyData(live.routines, live.poolFile);
+    note="Live from GitHub · "+(POOLFILE.moves||[]).length+" moves · routines v"+(R.version||"?");
+  }catch(e){
+    note = navigator.onLine===false
+      ? "Offline — using the copy stored in this page."
+      : "GitHub is not serving usable data ("+e.message+") — using the copy stored in this page.";
+  }
+  const TODAY=new Date().getDay();                      // 0 Sun .. 6 Sat
+  selId=(R.days[(TODAY+6)%7] || R.days[0]).id;           // Monday-first week
+  $("liveStatus").textContent=note;
+  renderMenu();
+}
+boot();
 if(!ytReady){ setTimeout(()=>{ if(window.YT && window.YT.Player) window.onYouTubeIframeAPIReady(); },1200); }
 setInterval(()=>{ if(!pMain && window.YT && window.YT.Player) window.onYouTubeIframeAPIReady(); }, 1500);
 </script>
