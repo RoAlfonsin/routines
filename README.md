@@ -6,7 +6,7 @@ One hour a day, seven days a week. Same order every day:
 |---|---|---|
 | Warm-Up | 8:04 | 11 moves, seated → standing, up the body: neck, shoulders, spine, arms, wrists, hips, legs |
 | *Pause* | 0:30 | stand easy and breathe |
-| Sun Salutations | 9:20 | written sequence — 8 rounds of 10 poses, 1:10 a round |
+| Sun Salutations | 9:20 | written sequence — 8 rounds of 10 poses, 1:10 a round, no stops |
 | *Transition* | 0:15 | breathe, shake it out |
 | Main routine | 22–24 min | the only block that changes day to day |
 | *Transition* | 0:15 | catch your breath |
@@ -25,14 +25,18 @@ is on, then picks up again.
 
 ### Sun salutations
 
-Eight rounds of ten poses, 5s work / 2s rest each, so one round is exactly **1:10**:
+Ten poses, **work-only** — the rest between them was folded into each hold, so the flow runs
+without stops. Holds follow the class's own proportions (the long ones are the lower-down, cobra,
+downward dog, the mountain and the arms-up at the end of the round) and are scaled so a round is
+**exactly 1:10**:
 
-Mountain → Forward Fold → Halfway Lift → Plank → Lower Down → Cobra → Downward Dog →
-Step Forward and Flat Back → Forward Fold → Stand Tall, arms up.
+Mountain 9s → Forward Fold 5s → Halfway Lift 6s → Plank 5s → Lower Down 9s → Cobra 8s →
+Downward Dog 8s → Step Forward and Flat Back 6s → Forward Fold 5s → Stand Tall 9s
 
-No opening setup and no closing stillness: the warm-up and the Settle block already bracket the
-day. Rodri replaced the follow-along class with this sequence on 2026-10-02 — the timing came from
-the class's own caption track (eight rounds, ~50s each).
+Eight rounds → **9:20**. No opening setup and no closing stillness: the warm-up and the Settle
+block already bracket the day. Rodri replaced the follow-along class with this sequence on
+2026-10-02; the timings came from the class's caption track (raw class holds run ~1:27 a round —
+scaled here to keep 1:10).
 
 ## Seeing the moves
 

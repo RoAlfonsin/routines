@@ -685,7 +685,7 @@
       "impact": "none",
       "level": 1,
       "unit": "reps",
-      "default": 5,
+      "default": 9,
       "cue": "Feet hip-width, arms overhead, gaze up. The reset between rounds.",
       "from": "Sun Salutation, timed"
     },
@@ -709,7 +709,7 @@
       "impact": "none",
       "level": 1,
       "unit": "reps",
-      "default": 5,
+      "default": 6,
       "cue": "Flat back, fingertips to the shins, chest reaching forward.",
       "from": "Sun Salutation, timed"
     },
@@ -733,7 +733,7 @@
       "impact": "moderate",
       "level": 2,
       "unit": "reps",
-      "default": 5,
+      "default": 9,
       "cue": "Lower with control, elbows close to the ribs. Knees down any time.",
       "from": "Sun Salutation, timed"
     },
@@ -745,7 +745,7 @@
       "impact": "low",
       "level": 1,
       "unit": "reps",
-      "default": 5,
+      "default": 8,
       "cue": "Tops of the feet pressed down, lift the chest, shoulders away from the ears.",
       "from": "Sun Salutation, timed"
     },
@@ -757,7 +757,7 @@
       "impact": "low",
       "level": 2,
       "unit": "reps",
-      "default": 5,
+      "default": 8,
       "cue": "Hips up and back, heels reaching for the mat. Breathe here.",
       "from": "Sun Salutation, timed"
     },
@@ -769,7 +769,7 @@
       "impact": "low",
       "level": 1,
       "unit": "reps",
-      "default": 5,
+      "default": 6,
       "cue": "Walk or step both feet to the hands, then lengthen the spine forward.",
       "from": "Sun Salutation, timed"
     },
@@ -781,7 +781,7 @@
       "impact": "none",
       "level": 1,
       "unit": "reps",
-      "default": 5,
+      "default": 9,
       "cue": "Rise all the way up, arms overhead, look up, then let the arms fall.",
       "from": "Sun Salutation, timed"
     }

@@ -10,55 +10,56 @@
     "moves": [
       {
         "ref": "sun-mountain",
-        "work": 5,
-        "rest": 2
+        "work": 9,
+        "rest": 0
       },
       {
         "ref": "sun-forward-fold",
         "work": 5,
-        "rest": 2
+        "rest": 0
       },
       {
         "ref": "sun-halfway-lift",
-        "work": 5,
-        "rest": 2
+        "work": 6,
+        "rest": 0
       },
       {
         "ref": "sun-plank",
         "work": 5,
-        "rest": 2
+        "rest": 0
       },
       {
         "ref": "sun-lower-down",
-        "work": 5,
-        "rest": 2
+        "work": 9,
+        "rest": 0
       },
       {
         "ref": "sun-cobra",
-        "work": 5,
-        "rest": 2
+        "work": 8,
+        "rest": 0
       },
       {
         "ref": "sun-downward-dog",
-        "work": 5,
-        "rest": 2
+        "work": 8,
+        "rest": 0
       },
       {
         "ref": "sun-step-forward",
-        "work": 5,
-        "rest": 2
+        "work": 6,
+        "rest": 0
       },
       {
         "ref": "sun-forward-fold",
         "work": 5,
-        "rest": 2
+        "rest": 0
       },
       {
         "ref": "sun-stand-tall",
-        "work": 5,
-        "rest": 2
+        "work": 9,
+        "rest": 0
       }
-    ]
+    ],
+    "note": "Work-only: the rest between poses was folded into each hold so the flow runs without stops. Holds are the class's own proportions, scaled to keep the round at 1:10 (the raw class holds would be ~1:27)."
   },
   "settle": {
     "label": "Closing meditation · same every day",
@@ -531,5 +532,5 @@
   ],
   "timing_margin_seconds": 90,
   "video_tail": 5,
-  "updated": "2026-10-03T01:17:49Z"
+  "updated": "2026-10-03T01:24:32Z"
 }

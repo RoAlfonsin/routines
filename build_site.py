@@ -712,6 +712,7 @@ function enter(first){
     if(s.video) gong();
     else if(s.block==="Cool-Down") strike(BOWL_MID,0.14,4);
     else if(s.kind==="work") strike(BOWL_HIGH,0.15,3);
+    else if(s.kind==="yoga") strike(BOWL_MID,0.12,3);   /* pose changes in the flow */
     else strike(BOWL_LOW,0.13,4);
   } else strike(BOWL_LOW,0.11,3);
   say(s.kind==="rest" ? "" : s.label);
