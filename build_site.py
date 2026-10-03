@@ -26,10 +26,11 @@ R = json.loads((HERE / "routines.json").read_text(encoding="utf-8"))
 HOUR = R["hour_seconds"]
 TAIL = R["video_tail"]
 SUN = R["sun"]
+SUN_TIMED = "moves" in SUN          # written sequence instead of the follow-along class
 SETTLE = R["settle"]
 TR = R["transitions"]
 MUSIC = R["music"]
-TR_SECONDS = TR["after_sun"] + TR["before_cooldown"]
+TR_SECONDS = TR["after_sun"] + TR["before_cooldown"] + TR.get("after_warmup", 0)
 REVIEW_THREAD = "1553973467496316948"
 
 
@@ -47,9 +48,11 @@ def circuit_cost(m, drop_final_rest=False):
 
 
 def transitions_for(day):
-    """The 15s transitions only happen when the blocks they bridge are present."""
+    """The pauses between blocks only happen when the blocks they bridge are present."""
     skip = set(day.get("skip") or [])
     t = 0
+    if "warmup" not in skip:
+        t += TR.get("after_warmup", 0)
     if "sun" not in skip:
         t += TR["after_sun"]
     if "cooldown" not in skip:
@@ -64,7 +67,8 @@ def day_blocks(day):
     if "warmup" not in skip:
         out.append(("Warm-Up", circuit_cost(R["warmup"])))
     if "sun" not in skip:
-        out.append(("Sun Salutations", SUN["nominal"] + TAIL))
+        out.append(("Sun Salutations",
+                    circuit_cost(SUN) if SUN_TIMED else SUN["nominal"] + TAIL))
     out.append((day["main"]["label"], circuit_cost(day["main"], drop_final_rest=True)))
     for i, ex in enumerate(day.get("extra") or []):
         out.append((ex.get("label") or f"Extra {i + 1}", circuit_cost(ex, drop_final_rest=True)))
@@ -366,15 +370,16 @@ const WEBHOOK = DATA.webhook, THREAD = DATA.thread;
    committed on GitHub, so an edit lands on the phone without waiting for the Pages rebuild;
    the baked-in copy stays as the offline fallback. The editor works on a copy of all this. */
 let POOL = DATA.pool, POOLFILE = DATA.poolFile, R = DATA.routines;
-let HOUR = 3600, TAIL = 0, SUN = {}, SETTLE = {}, TR = {}, MUSIC = {}, WARM = {}, COOL = {},
+let HOUR = 3600, TAIL = 0, SUN = {}, SUN_TIMED = false, SETTLE = {}, TR = {}, MUSIC = {}, WARM = {}, COOL = {},
     TR_SECONDS = 0;
 const indexPool = file => { const m = {}; (file.moves || []).forEach(x => { m[x.id] = x; }); return m; };
 function applyData(routines, poolFile){
   R = routines; POOLFILE = poolFile; POOL = indexPool(poolFile);
   HOUR = R.hour_seconds || 3600; TAIL = R.video_tail || 0;
   SUN = R.sun || {}; SETTLE = R.settle || {}; TR = R.transitions || {}; MUSIC = R.music || {};
+  SUN_TIMED = !SUN.video;                 /* the written sequence replaced the follow-along class */
   WARM = R.warmup || {moves: []}; COOL = R.cooldown || {moves: []};
-  TR_SECONDS = (TR.after_sun || 0) + (TR.before_cooldown || 0);
+  TR_SECONDS = (TR.after_sun || 0) + (TR.before_cooldown || 0) + (TR.after_warmup || 0);
 }
 applyData(R, POOLFILE);
 const $ = id => document.getElementById(id);
@@ -430,7 +435,7 @@ function mkPlayer(hostId, vid, opts){
 window.onYouTubeIframeAPIReady = function(){
   ytReady = true;
   if(pMain) return;
-  pMain  = mkPlayer("vpMain",  SUN.video, {main:true});
+  pMain  = mkPlayer("vpMain",  SUN.video || SETTLE.video, {main:true});
   pMusic = mkPlayer("vpMusic", MUSIC.video, {music:true});
   prefetch(currentDay());
 };
@@ -439,11 +444,11 @@ function prefetch(day){
   if(!pMain || dursFor===day.id) return;
   dursFor = day.id; durs = {sun:null,settle:null};
   try{ pMain.mute(); }catch(e){}
-  const list=[["sun",SUN.video],["settle",SETTLE.video]];
+  const list=[["sun",SUN.video],["settle",SETTLE.video]].filter(x=>!!x[1]);
   let k=0;
   const next=()=>{
     if(k>=list.length){
-      try{ pMain.cueVideoById(SUN.video); pMain.unMute(); }catch(e){}
+      try{ pMain.cueVideoById(SETTLE.video); pMain.unMute(); }catch(e){}
       renderMenu(); return;
     }
     const key=list[k][0], vid=list[k][1]; k++;
@@ -459,9 +464,9 @@ function prefetch(day){
 }
 
 /* ================= timeline ================= */
-/* A day is an ordered list of blocks. Warm-up, the sun class, the cool-down and the closing
-   meditation are shared by every day; the main circuit belongs to the day, and a day can
-   carry extra circuits of its own. Any block except the day's main circuit can be skipped. */
+/* A day is an ordered list of blocks. Warm-up, the sun salutations, the cool-down and the
+   closing meditation are shared by every day; the main circuit belongs to the day, and a day
+   can carry extra circuits of its own. Any block except the day's main circuit can be skipped. */
 
 const skipped = (day,key) => (day.skip||[]).indexOf(key) >= 0;
 
@@ -479,8 +484,14 @@ function blockList(day, Rx){
   const out=[];
   if(!skipped(day,"warmup")) out.push({key:"warmup", block:"Warm-Up", kind:"warm", shared:true,
         dur:circuitCost(W,false), moves:(W.moves||[]).length, rounds:W.rounds||1});
-  if(!skipped(day,"sun")) out.push({key:"sun", block:"Sun Salutations", kind:"yoga", shared:true,
-        video:true, dur:((durs.sun||S.nominal||0)+TAIL), moves:0, rounds:1});
+  if(!skipped(day,"sun")){
+    if(SUN_TIMED)
+      out.push({key:"sun", block:"Sun Salutations", kind:"yoga", shared:true,
+            dur:circuitCost(S,false), moves:(S.moves||[]).length, rounds:S.rounds||1});
+    else
+      out.push({key:"sun", block:"Sun Salutations", kind:"yoga", shared:true,
+            video:true, dur:((durs.sun||S.nominal||0)+TAIL), moves:0, rounds:1});
+  }
   out.push({key:"main", block:day.main.label, kind:"work", shared:false,
         dur:circuitCost(day.main,true), moves:(day.main.moves||[]).length, rounds:day.main.rounds||1});
   (day.extra||[]).forEach((ex,i)=>out.push({key:"extra:"+i, block:(ex.label||("Extra "+(i+1))),
@@ -496,12 +507,14 @@ function cfgFor(day,key,Rx){
   Rx = Rx || R;
   if(key==="warmup") return Rx.warmup;
   if(key==="cooldown") return Rx.cooldown;
+  if(key==="sun") return Rx.sun;
   if(key==="main") return day.main;
   if(key.indexOf("extra:")===0) return (day.extra||[])[+key.slice(6)];
   return null;
 }
 function transFor(day){
-  return (skipped(day,"sun") ? 0 : (TR.after_sun||0))
+  return (skipped(day,"warmup") ? 0 : (TR.after_warmup||0))
+       + (skipped(day,"sun") ? 0 : (TR.after_sun||0))
        + (skipped(day,"cooldown") ? 0 : (TR.before_cooldown||0));
 }
 function plan(day,Rx){
@@ -512,7 +525,7 @@ function nextName(day, key, fallback){
   const bl=blockList(day), i=bl.findIndex(b=>b.key===key);
   if(i<0 || i+1>=bl.length) return fallback;
   const n=bl[i+1];
-  if(n.key==="sun") return "the sun salutation class";
+  if(n.key==="sun") return SUN_TIMED ? "the sun salutations" : "the sun salutation class";
   if(n.key==="settle") return "the closing meditation";
   return n.block;
 }
@@ -543,7 +556,7 @@ function circuitSteps(cfg, block, kind, o){
 function blockSteps(day, b){
   if(b.key==="warmup")
     return circuitSteps(WARM, "Warm-Up", "work", {music:true, restLabel:"Change over",
-             next:nextName(day,"warmup","the sun salutation class")});
+             next:nextName(day,"warmup", SUN_TIMED ? "the sun salutations" : "the sun salutation class")});
   if(b.key==="cooldown")
     return circuitSteps(COOL, "Cool-Down", "stretch", {music:true, mergeRest:true,
              next:nextName(day,"cooldown","the closing meditation")});
@@ -555,10 +568,15 @@ function blockSteps(day, b){
     return circuitSteps(cfgFor(day,b.key), b.block, "work",
              {music:true, restLabel:"Rest", restCue:"Breathe.", dropFinalRest:true,
               next:nextName(day,b.key,"the closing meditation")});
-  if(b.key==="sun")
+  if(b.key==="sun"){
+    if(SUN_TIMED)
+      return circuitSteps(SUN, "Sun Salutations", "yoga",
+               {music:true, restLabel:"Flow", restCue:"Keep moving with the breath.",
+                next:nextName(day,"sun","the main routine")});
     return [{block:"Sun Salutations", kind:"yoga", label:SUN.title, sub:SUN.channel,
              cue:"Follow along. Match your breath to hers — no timer, just rhythm.",
              dur:b.dur, video:"sun", round:1, rounds:1}];
+  }
   if(b.key==="settle")
     return [{block:"Settle", kind:"meditation", label:SETTLE.title, sub:SETTLE.channel,
              cue:"Same closing meditation every day. Sit down, close your eyes, follow the voice.",
@@ -571,6 +589,10 @@ function buildTimeline(day){
     out.push(...p.steps);
     const nx=parts[i+1];
     if(!nx) return;
+    if(p.b.key==="warmup" && (TR.after_warmup||0)>0)
+      out.push({block:"Transition", kind:"rest", label:"Pause",
+                cue:"Stand easy and breathe. "+(TR.after_warmup||0)+" seconds, then the sun salutations.",
+                dur:TR.after_warmup, round:1, rounds:1, music:true});
     if(p.b.key==="sun" && (TR.after_sun||0)>0)
       out.push({block:"Transition", kind:"rest", label:"Transition",
                 cue:"Shake out the sun salutations. "+(TR.after_sun||0)+" seconds, then the main routine.",
@@ -598,7 +620,10 @@ function colorFor(name,day){
 const roundsTxt = n => n + (n===1 ? " round · " : " rounds · ");
 function descFor(b,day){
   if(b.key==="settle") return (SETTLE.channel||"")+" · same every day";
-  if(b.key==="sun") return (SUN.channel||"")+" · follow-along class";
+  if(b.key==="sun")
+    return SUN_TIMED
+      ? roundsTxt(SUN.rounds||1)+(SUN.moves||[]).length+" moves · written sequence"
+      : ((SUN.channel||"")+" · follow-along class");
   if(b.key==="warmup") return b.moves+" moves · seated to standing";
   if(b.key==="cooldown") return b.moves+" stretches";
   if(b.key.indexOf("extra:")===0) return (b.rounds>1?roundsTxt(b.rounds):"")+b.moves+" moves";
@@ -626,12 +651,15 @@ function renderMenu(){
   box2.appendChild(tot);
   $("poolInfo").innerHTML = "<div class='blk'><div><b>"+Object.keys(POOL).length+" moves</b><em>tagged by pattern, position, impact, level</em></div></div>"
     + "<div class='blk'><div><b>Music</b><em>"+MUSIC.title+" · "+MUSIC.channel+"</em></div></div>"
-    + "<div class='blk'><div><b>Sun class</b><em>"+SUN.title+"</em></div></div>";
-  $("tagline").textContent = "One hour a day · warm-up seated to standing · sun salutation class · main routine · cool-down · closing meditation";
+    + "<div class='blk'><div><b>Sun Salutations</b><em>"+(SUN_TIMED
+        ? (SUN.rounds||1)+" rounds · "+(SUN.moves||[]).length+" moves · written sequence"
+        : (SUN.title||"")+" · "+(SUN.channel||""))+"</em></div></div>";
+  $("tagline").textContent = "One hour a day · warm-up seated to standing · sun salutation sequence · main routine · cool-down · closing meditation";
   $("startBtn").textContent="Start "+day.day+" · "+day.main.label;
   $("musicName").textContent = MUSIC.title+" · "+MUSIC.channel;
-  $("vstatus").textContent = (durs.sun
-      ? "Video lengths read from YouTube: "+fmt(durs.sun)+", "+fmt(durs.settle||0)+"."
+  const vd = durs.settle || durs.sun;
+  $("vstatus").textContent = (vd
+      ? "Video length read from YouTube: "+fmt(vd)+"."
       : (ytReady ? "Reading video lengths…" : "YouTube unavailable — nominal lengths used."));
 }
 
@@ -849,7 +877,7 @@ const clone=o=>JSON.parse(JSON.stringify(o));
 const RAWURL=n=>"https://raw.githubusercontent.com/"+REPO+"/"+BRANCH+"/"+n;
 const APIURL=p=>"https://api.github.com/repos/"+REPO+"/contents/"+p;
 const SKIPKEYS=["warmup","sun","cooldown","settle"];
-const SKIPNAME={warmup:"the warm-up", sun:"the sun salutation class",
+const SKIPNAME={warmup:"the warm-up", sun:"the sun salutations",
                 cooldown:"the cool-down", settle:"the closing meditation"};
 let ED=null;
 
@@ -957,11 +985,14 @@ function closeEditor(){
   ED=null; $("edit").classList.remove("on"); $("sheet").classList.remove("on");
   $("menu").style.display="flex"; renderMenu();
 }
-const edRight=b=>fmt(b.dur)+(b.key==="sun"||b.key==="settle" ? "" : " · "+b.moves+" moves");
+/* A video block is the closing meditation, and the sun salutations whenever the class is
+   still in the data (SUN.video). Everything else is a circuit with move rows. */
+const VIDEOBLOCK = k => (k==="sun" ? !SUN_TIMED : k==="settle" ? !!SETTLE.video : false);
+const edRight=b=>fmt(b.dur)+(VIDEOBLOCK(b.key) ? "" : " · "+b.moves+" moves");
 function edSubLine(){
   const day=edDay();
   return day.day+" · "+day.focus+" · "+fmt(plan(day,ED.routines).total)
-    +" nominal — the sun class and the closing meditation take their real length at run time.";
+    +" nominal — the closing meditation takes its real length at run time.";
 }
 function renderEditor(){
   if(!ED) return;
@@ -1021,7 +1052,8 @@ function edCard(b){
     +"<span class='etag'>"+(b.shared?"every day":"this day")+"</span>"
     +"<em id='edh:"+b.key+"'>"+edRight(b)+"</em>";
   card.appendChild(head);
-  const isCircuit = b.key==="warmup" || b.key==="cooldown" || b.key==="main" || b.key.indexOf("extra:")===0;
+  const isCircuit = !VIDEOBLOCK(b.key) &&
+    (b.key==="warmup" || b.key==="cooldown" || b.key==="sun" || b.key==="main" || b.key.indexOf("extra:")===0);
   if(isCircuit){
     const cfg=edCfg(b.key);
     const row=document.createElement("div"); row.className="ehead"; row.style.marginTop="8px";

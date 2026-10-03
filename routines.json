@@ -1,28 +1,62 @@
 {
   "version": 5,
   "hour_seconds": 3600,
-  "note": "One hour per day, give or take a couple of minutes: block lengths are nominal and the two video blocks take their real length at runtime. No block is forced to hit an exact total. No opening meditation: the hour starts with the warm-up (Rodri, 2026-09-30).",
+  "note": "One hour per day, give or take. Block lengths are nominal; the closing meditation takes its real length at runtime. No opening meditation: the hour starts with the warm-up (Rodri 2026-09-30). Sun salutations are a written timed section now, not the follow-along class, with a 30s pause after the warm-up (Rodri 2026-10-02).",
   "sun": {
-    "label": "Sun Salutations · follow-along class",
-    "video": "I9_wJmIAckA",
-    "channel": "Charlie Follows",
-    "title": "10 Min Morning Sun Salutations · Beginner Friendly Yoga Flow",
-    "nominal": 665,
-    "alternates": [
+    "label": "Sun Salutations",
+    "source": "timed sequence (was: Charlie Follows class)",
+    "rounds": 8,
+    "rest_between_rounds": 0,
+    "moves": [
       {
-        "video": "8AakYeM23sI",
-        "channel": "Yoga With Adriene",
-        "title": "10 min Sun Salutation Practice"
+        "ref": "sun-mountain",
+        "work": 5,
+        "rest": 2
       },
       {
-        "video": "awJQjfWtBcQ",
-        "channel": "Yoga With Bird",
-        "title": "10 Minute Yoga Sun Salutation Flow"
+        "ref": "sun-forward-fold",
+        "work": 5,
+        "rest": 2
       },
       {
-        "video": "WQK7O0QqgHQ",
-        "channel": "Yoga With Natasha",
-        "title": "10 Minute Sun Salutation Sequence"
+        "ref": "sun-halfway-lift",
+        "work": 5,
+        "rest": 2
+      },
+      {
+        "ref": "sun-plank",
+        "work": 5,
+        "rest": 2
+      },
+      {
+        "ref": "sun-lower-down",
+        "work": 5,
+        "rest": 2
+      },
+      {
+        "ref": "sun-cobra",
+        "work": 5,
+        "rest": 2
+      },
+      {
+        "ref": "sun-downward-dog",
+        "work": 5,
+        "rest": 2
+      },
+      {
+        "ref": "sun-step-forward",
+        "work": 5,
+        "rest": 2
+      },
+      {
+        "ref": "sun-forward-fold",
+        "work": 5,
+        "rest": 2
+      },
+      {
+        "ref": "sun-stand-tall",
+        "work": 5,
+        "rest": 2
       }
     ]
   },
@@ -37,7 +71,8 @@
   "transitions": {
     "after_sun": 15,
     "before_cooldown": 15,
-    "note": "Rodri, 2026-09-29: a 15 second transition after the sun salutations and another before the cool-down."
+    "note": "Rodri, 2026-09-29: a 15 second transition after the sun salutations and another before the cool-down.",
+    "after_warmup": 30
   },
   "music": {
     "video": "3PFJ9SETS4M",
@@ -496,5 +531,5 @@
   ],
   "timing_margin_seconds": 90,
   "video_tail": 5,
-  "updated": "2026-10-02T17:52:36Z"
+  "updated": "2026-10-03T01:17:49Z"
 }
