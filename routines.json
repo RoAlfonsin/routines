@@ -298,11 +298,6 @@
         "rest_between_rounds": 45,
         "moves": [
           {
-            "ref": "high-knees",
-            "work": 40,
-            "rest": 15
-          },
-          {
             "ref": "climber-taps",
             "work": 40,
             "rest": 15
@@ -504,5 +499,5 @@
   ],
   "timing_margin_seconds": 90,
   "video_tail": 5,
-  "updated": "2026-10-03T03:07:04.262Z"
+  "updated": "2026-10-03T03:07:45.158Z"
 }
