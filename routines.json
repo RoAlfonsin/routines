@@ -299,27 +299,27 @@
         "moves": [
           {
             "ref": "climber-taps",
-            "work": 40,
+            "work": 45,
             "rest": 15
           },
           {
             "ref": "plank-walkouts",
-            "work": 40,
+            "work": 45,
             "rest": 15
           },
           {
             "ref": "dead-bugs",
-            "work": 40,
+            "work": 45,
             "rest": 15
           },
           {
             "ref": "flutter-kicks",
-            "work": 40,
+            "work": 45,
             "rest": 15
           },
           {
             "ref": "seated-leg-raises",
-            "work": 40,
+            "work": 45,
             "rest": 15
           }
         ]
@@ -333,32 +333,32 @@
         "label": "Arms & Back",
         "source": "Darebee",
         "url": "https://darebee.com/workouts/arms-and-back-workout.html",
-        "rounds": 3,
+        "rounds": 4,
         "rest_between_rounds": 45,
         "moves": [
           {
             "ref": "bicep-extensions",
-            "work": 40,
+            "work": 45,
             "rest": 15
           },
           {
             "ref": "shoulder-taps",
-            "work": 40,
+            "work": 45,
             "rest": 15
           },
           {
             "ref": "reverse-angels",
-            "work": 40,
+            "work": 45,
             "rest": 15
           },
           {
             "ref": "plank-rotations",
-            "work": 40,
+            "work": 45,
             "rest": 15
           },
           {
             "ref": "superman-stretches",
-            "work": 40,
+            "work": 45,
             "rest": 15
           }
         ]
@@ -372,32 +372,32 @@
         "label": "Outlast + Last Life",
         "source": "Darebee",
         "url": "https://darebee.com/workouts/outlast-workout.html",
-        "rounds": 3,
+        "rounds": 4,
         "rest_between_rounds": 45,
         "moves": [
           {
             "ref": "march-steps",
-            "work": 40,
+            "work": 45,
             "rest": 15
           },
           {
             "ref": "squats",
-            "work": 40,
+            "work": 45,
             "rest": 15
           },
           {
             "ref": "bicep-extensions",
-            "work": 40,
+            "work": 45,
             "rest": 15
           },
           {
             "ref": "knee-to-elbows",
-            "work": 40,
+            "work": 45,
             "rest": 15
           },
           {
             "ref": "downward-dog-leg-raises",
-            "work": 40,
+            "work": 45,
             "rest": 15
           }
         ]
@@ -411,32 +411,32 @@
         "label": "Low Impact",
         "source": "Darebee",
         "url": "https://darebee.com/workouts/low-impact-workout.html",
-        "rounds": 3,
+        "rounds": 4,
         "rest_between_rounds": 45,
         "moves": [
           {
             "ref": "march-steps",
-            "work": 40,
+            "work": 45,
             "rest": 15
           },
           {
             "ref": "calf-raises",
-            "work": 40,
+            "work": 45,
             "rest": 15
           },
           {
             "ref": "shoulder-taps",
-            "work": 40,
+            "work": 45,
             "rest": 15
           },
           {
             "ref": "leg-extensions",
-            "work": 40,
+            "work": 45,
             "rest": 15
           },
           {
             "ref": "glute-bridges",
-            "work": 40,
+            "work": 45,
             "rest": 15
           }
         ]
@@ -499,5 +499,5 @@
   ],
   "timing_margin_seconds": 90,
   "video_tail": 5,
-  "updated": "2026-10-03T03:08:54.406Z"
+  "updated": "2026-10-03T03:11:34.000Z"
 }
