@@ -382,7 +382,7 @@ TEMPLATE = r"""<!DOCTYPE html>
     </div>
   </div></div>
 
-  <div id="musicHost"><div id="vpMusic"></div><div id="vpMusicSun"></div></div>
+  <div id="musicHost"><div id="vpMusic"></div></div>
 </div>
 
 <script>
@@ -475,14 +475,27 @@ function preloadStep(s){ const src = clipFor(s); if(src) clipEl(src); }
 function say(t){ if(!voiceEnabled||!t) return; deviceVoice(t); }
 
 /* ================= youtube: 2 content blocks + a music bed ================= */
-let ytReady=false, pMain=null, pMusic=null, pMusicSun=null;
-/* The salutations move slowly and the house bed fights them, so they get their own stream
-   (music.beds.sun). Both music players stay alive; the run screen switches between them. */
-const SUNBED = (MUSIC.beds || {}).sun || null;
-const musicPlayers = () => [pMusic, pMusicSun].filter(Boolean);
+let ytReady=false, pMain=null;
+/* Music beds. `music.video` is the default stream; each entry in `music.beds.<name>` names the
+   block keys it covers, so which stream plays where is data, not code. (Rodri, 2026-10-02: the
+   house bed was too fast for the warm-up and the salutations, hence "calm".) */
+const BEDDEFS = (() => {
+  const out=[{name:"default", video:MUSIC.video, title:MUSIC.title, channel:MUSIC.channel, blocks:[]}];
+  Object.keys(MUSIC.beds || {}).forEach(n=>{
+    const b = MUSIC.beds[n] || {};
+    if(b.video) out.push({name:n, video:b.video, title:b.title||n,
+                          channel:b.channel||MUSIC.channel, blocks:b.blocks||[]});
+  });
+  return out;
+})();
+let pMusicBeds = {};
+const bedDef = name => BEDDEFS.find(b=>b.name===name) || BEDDEFS[0];
+const bedOfKey = k => { const hit = BEDDEFS.find(b=>(b.blocks||[]).indexOf(k)>=0); return hit ? hit.name : "default"; };
+const BLOCKWORD = {warmup:"warm-up", sun:"salutations", main:"main", cooldown:"cool-down", settle:"settle"};
+const musicPlayers = () => Object.keys(pMusicBeds).map(k=>pMusicBeds[k]).filter(Boolean);
 let durs={sun:null,settle:null}, dursFor=null;
 let musicWanted=true, musicVol=35;
-let curBed="default";        /* which bed is sounding: "default" or "sun" */
+let curBed="default";        /* which bed is sounding */
 
 function mkPlayer(hostId, vid, opts){
   try{
@@ -497,8 +510,15 @@ window.onYouTubeIframeAPIReady = function(){
   ytReady = true;
   if(pMain) return;
   pMain  = mkPlayer("vpMain",  SUN.video || SETTLE.video, {main:true});
-  pMusic = mkPlayer("vpMusic", MUSIC.video, {music:true});
-  if(SUNBED && SUNBED.video) pMusicSun = mkPlayer("vpMusicSun", SUNBED.video, {music:true});
+  pMusicBeds = {};
+  BEDDEFS.forEach(b=>{
+    const host = b.name==="default" ? "vpMusic" : "vpMusic_"+b.name;
+    if(!document.getElementById(host)){
+      const d=document.createElement("div"); d.id=host;
+      document.getElementById("musicHost").appendChild(d);
+    }
+    pMusicBeds[b.name] = mkPlayer(host, b.video, {music:true});
+  });
   prefetch(currentDay());
 };
 /* Read the real length of both videos once, through the single visible player. */
@@ -645,8 +665,6 @@ function blockSteps(day, b){
              dur:b.dur, video:"settle", round:1, rounds:1}];
   return [];
 }
-/* Which music bed a block uses: the salutations get music.beds.sun when it is defined. */
-const bedOfKey = k => (SUNBED && SUNBED.video && k==="sun") ? "sun" : "default";
 function buildTimeline(day){
   const parts=blockList(day).map(b=>({b, steps:blockSteps(day,b)})), out=[];
   parts.forEach((p,i)=>{
@@ -719,14 +737,15 @@ function renderMenu(){
   tot.innerHTML="<div><b>Total</b><em>nominal, ±1½ min per block</em></div><u>"+fmt(p.total)+"</u>";
   box2.appendChild(tot);
   $("poolInfo").innerHTML = "<div class='blk'><div><b>"+Object.keys(POOL).length+" moves</b><em>tagged by pattern, position, impact, level</em></div></div>"
-    + "<div class='blk'><div><b>Music</b><em>"+MUSIC.title+" · "+MUSIC.channel
-        +(SUNBED ? " — "+SUNBED.title+" under the salutations" : "")+"</em></div></div>"
+    + "<div class='blk'><div><b>Music</b><em>"+BEDDEFS.map(b=>
+        b.title+(b.blocks.length ? " ("+b.blocks.map(k=>BLOCKWORD[k]||k).join(", ")+")" : " (the rest)")
+      ).join(" · ")+"</em></div></div>"
     + "<div class='blk'><div><b>Sun Salutations</b><em>"+(SUN_TIMED
         ? (SUN.rounds||1)+" rounds · "+(SUN.moves||[]).length+" moves · written sequence"
         : (SUN.title||"")+" · "+(SUN.channel||""))+"</em></div></div>";
   $("tagline").textContent = "One hour a day · warm-up seated to standing · sun salutation sequence · main routine · cool-down · closing meditation";
   $("startBtn").textContent="Start "+day.day+" · "+day.main.label;
-  $("musicName").textContent = (SUNBED ? MUSIC.title+" / "+SUNBED.title : MUSIC.title)+" · "+MUSIC.channel;
+  $("musicName").textContent = BEDDEFS.map(b=>b.title).join(" / ")+" · "+MUSIC.channel;
   const vd = durs.settle || durs.sun;
   $("vstatus").textContent = (vd
       ? "Video length read from YouTube: "+fmt(vd)+"."
@@ -773,15 +792,15 @@ function enter(first){
   // music runs under every non-video block
   const wantMusic = !wantsVideo && musicWanted;
   $("musicbar").classList.toggle("on", !!wantMusic);
-  /* Swap beds when the step's block changes: the wanted one plays, the other pauses. */
-  if(pMusic || pMusicSun){
+  /* Swap beds when the step's block changes: the wanted one plays, the others pause. */
+  if(musicPlayers().length){
     const want = wantMusic ? (s.bed || "default") : null;
     if(want) curBed = want;
-    $("musicName").textContent = ((curBed==="sun" && SUNBED) ? SUNBED.title : MUSIC.title)+" · "+MUSIC.channel;
-    [["default",pMusic],["sun",pMusicSun]].forEach(([k,p])=>{
-      if(!p) return;
+    $("musicName").textContent = bedDef(curBed).title+" · "+bedDef(curBed).channel;
+    BEDDEFS.forEach(b=>{
+      const p = pMusicBeds[b.name]; if(!p) return;
       try{
-        if(k===want){ p.unMute(); p.setVolume(musicVol); p.playVideo(); }
+        if(b.name===want){ p.unMute(); p.setVolume(musicVol); p.playVideo(); }
         else p.pauseVideo();
       }catch(e){}
     });
@@ -858,7 +877,7 @@ function finish(){
   st.running=false; if(hb){clearInterval(hb);hb=null;}
   chime3();
   if(curVideo && pMain){ try{pMain.pauseVideo();}catch(e){} }
-  if(pMusic){ try{pMusic.pauseVideo();}catch(e){} }
+  musicPlayers().forEach(p=>{ try{p.pauseVideo();}catch(e){} });
   $("run").style.display="none"; showReview();
 }
 
@@ -1364,7 +1383,7 @@ $("musicTog").onchange=e=>{ musicWanted=e.target.checked;
   if(!musicWanted){ musicPlayers().forEach(p=>{try{p.pauseVideo();}catch(x){}}); $("musicbar").classList.remove("on"); } };
 $("musicVol").oninput=e=>{ musicVol=+e.target.value;
   musicPlayers().forEach(p=>{ try{p.setVolume(musicVol);}catch(x){} }); };
-$("musicToggle").onclick=()=>{ const p = curBed==="sun" ? pMusicSun : pMusic; if(!p) return;
+$("musicToggle").onclick=()=>{ const p = pMusicBeds[curBed] || pMusicBeds[BEDDEFS[0].name]; if(!p) return;
   let playing=false; try{ playing = p.getPlayerState()===1; }catch(e){}
   if(playing){ try{p.pauseVideo();}catch(e){} $("musicToggle").textContent="Play music"; }
   else { try{p.unMute(); p.setVolume(musicVol); p.playVideo();}catch(e){} $("musicToggle").textContent="Pause music"; } };

@@ -85,15 +85,20 @@
       "Cool-Down"
     ],
     "beds": {
-      "sun": {
+      "calm": {
         "video": "JD-kMIpDfnY",
         "channel": "Lofi Girl",
         "title": "lofi sleep/chill radio",
         "stream": "lofi hip hop radio 💤 beats to sleep/chill to",
         "during": [
+          "Warm-Up",
           "Sun Salutations"
         ],
-        "note": "The salutations are slow and the house bed fought them, so they have their own calmer stream (Rodri, 2026-10-02). Both beds are live 24/7 streams; the pause before the salutations is where the swap happens."
+        "note": "The warm-up and the salutations move slowly and the house bed fought them, so they share this calmer stream (Rodri, 2026-10-02). With both on it, the stream swaps once per session, under the 15s transition after the salutations.",
+        "blocks": [
+          "warmup",
+          "sun"
+        ]
       }
     }
   },
@@ -544,5 +549,5 @@
   ],
   "timing_margin_seconds": 90,
   "video_tail": 5,
-  "updated": "2026-10-03T01:48:37Z"
+  "updated": "2026-10-03T01:52:41Z"
 }

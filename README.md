@@ -23,13 +23,15 @@ about a day being off the hour.
 **Music** runs under the timed blocks and stops while a video block is on, then picks up again.
 There are **two Lofi Girl beds**, both 24/7 live streams:
 
-- **lofi house radio** (`3PFJ9SETS4M`) — warm-up, main circuit, cool-down.
-- **lofi sleep/chill radio** (`JD-kMIpDfnY`) — the sun salutations, which move too slowly for the
-  house tempo. The swap happens during the 30s pause before the salutations, so you never hear it
-  cut over a pose.
+- **lofi house radio** (`3PFJ9SETS4M`) — the main circuit and the cool-down.
+- **lofi sleep/chill radio** (`JD-kMIpDfnY`) — the warm-up and the sun salutations, which both move
+  too slowly for the house tempo. The stream swaps **once per session**, during the 15s transition
+  after the salutations, so you never hear it cut over a move.
 
-Both beds are separate players; only the one in use plays. The volume slider, the play/pause button
-and the menu's music row all follow whichever bed is sounding.
+Which bed a block uses is data, not code: `music.beds.<name>.blocks` lists the block keys it covers,
+and any block not claimed runs on `music.video`. Both beds are separate players and only the one in
+use plays; the volume slider, the play/pause button and the menu's music row follow whichever bed is
+sounding.
 
 **Caveat on live streams:** Lofi Girl rotates and retires their stream IDs, so a dead one shows a
 black frame with no sound rather than an error. Check with
@@ -212,8 +214,9 @@ build catch up, usually under a minute.
 - **Change the salutations:** `sun.moves` (the ten poses, in order) and `sun.rounds` — or just use
   the editor.
 - **Change a pause:** `transitions.after_warmup`, `after_sun`, `before_cooldown`, in seconds.
-- **Swap the music:** change `music.video` (the bed for the warm-up, main and cool-down) or
-  `music.beds.sun.video` (the salutations). Both must be *live* streams.
+- **Swap the music:** change `music.video` (the bed every unclaimed block runs on) or
+  `music.beds.<name>.video`, and move block keys between `music.beds.<name>.blocks` to decide which
+  block hears which stream. Both must be *live* streams.
 - **Change a main routine:** edit that day's `main.moves` (a `ref` into `pool.json` plus
   `work`/`rest` seconds) and `rounds`.
 - **Add a move:** append to `pool.json` with a unique `id`, then reference it by `ref`.
