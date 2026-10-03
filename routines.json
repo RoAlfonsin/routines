@@ -1,7 +1,7 @@
 {
   "version": 5,
   "hour_seconds": 3600,
-  "note": "One hour per day, give or take. Block lengths are nominal; the closing meditation takes its real length at runtime. No opening meditation: the hour starts with the warm-up (Rodri 2026-09-30). Sun salutations are a written timed section now, not the follow-along class, with a 30s pause after the warm-up (Rodri 2026-10-02).",
+  "note": "One hour per day, give or take. Block lengths are nominal; the closing meditation takes its real length at runtime. No opening meditation: the hour starts with the warm-up (Rodri 2026-09-30). Sun salutations are a written timed section now, not the follow-along class, with a 30s pause after the warm-up (Rodri 2026-10-02). The sun salutations play a calmer Lofi Girl stream than the rest of the hour (Rodri, 2026-10-02).",
   "sun": {
     "label": "Sun Salutations",
     "source": "timed sequence (was: Charlie Follows class)",
@@ -83,7 +83,19 @@
       "Warm-Up",
       "main",
       "Cool-Down"
-    ]
+    ],
+    "beds": {
+      "sun": {
+        "video": "JD-kMIpDfnY",
+        "channel": "Lofi Girl",
+        "title": "lofi sleep/chill radio",
+        "stream": "lofi hip hop radio 💤 beats to sleep/chill to",
+        "during": [
+          "Sun Salutations"
+        ],
+        "note": "The salutations are slow and the house bed fought them, so they have their own calmer stream (Rodri, 2026-10-02). Both beds are live 24/7 streams; the pause before the salutations is where the swap happens."
+      }
+    }
   },
   "warmup": {
     "label": "Warm-Up · seated to standing",
@@ -532,5 +544,5 @@
   ],
   "timing_margin_seconds": 90,
   "video_tail": 5,
-  "updated": "2026-10-03T01:24:32Z"
+  "updated": "2026-10-03T01:48:37Z"
 }
