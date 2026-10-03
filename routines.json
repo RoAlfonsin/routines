@@ -411,27 +411,12 @@
             "rest": 15
           },
           {
-            "ref": "step-jacks",
-            "work": 40,
-            "rest": 15
-          },
-          {
-            "ref": "high-knees",
-            "work": 40,
-            "rest": 15
-          },
-          {
             "ref": "knee-to-elbows",
             "work": 40,
             "rest": 15
           },
           {
-            "ref": "overhead-punches",
-            "work": 40,
-            "rest": 15
-          },
-          {
-            "ref": "straight-punches",
+            "ref": "downward-dog-leg-raises",
             "work": 40,
             "rest": 15
           }
@@ -549,5 +534,5 @@
   ],
   "timing_margin_seconds": 90,
   "video_tail": 5,
-  "updated": "2026-10-03T01:52:41Z"
+  "updated": "2026-10-03T03:03:26.807Z"
 }
