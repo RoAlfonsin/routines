@@ -450,27 +450,12 @@
             "rest": 15
           },
           {
-            "ref": "alt-arm-leg-raises",
-            "work": 40,
-            "rest": 15
-          },
-          {
             "ref": "leg-extensions",
             "work": 40,
             "rest": 15
           },
           {
-            "ref": "side-leg-extensions",
-            "work": 40,
-            "rest": 15
-          },
-          {
             "ref": "glute-bridges",
-            "work": 40,
-            "rest": 15
-          },
-          {
-            "ref": "flutter-kicks",
             "work": 40,
             "rest": 15
           }
@@ -534,5 +519,5 @@
   ],
   "timing_margin_seconds": 90,
   "video_tail": 5,
-  "updated": "2026-10-03T03:03:26.807Z"
+  "updated": "2026-10-03T03:06:02.229Z"
 }
