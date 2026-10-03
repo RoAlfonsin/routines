@@ -5,7 +5,8 @@ One hour a day, seven days a week. Same order every day:
 | block | nominal | what |
 |---|---|---|
 | Warm-Up | 8:04 | 11 moves, seated → standing, up the body: neck, shoulders, spine, arms, wrists, hips, legs |
-| Sun Salutations | ~11 min | **follow-along class** (YouTube) — watch and copy the rhythm |
+| *Pause* | 0:30 | stand easy and breathe |
+| Sun Salutations | 9:20 | written sequence — 8 rounds of 10 poses, 1:10 a round |
 | *Transition* | 0:15 | breathe, shake it out |
 | Main routine | 22–24 min | the only block that changes day to day |
 | *Transition* | 0:15 | catch your breath |
@@ -14,17 +15,29 @@ One hour a day, seven days a week. Same order every day:
 
 There is no opening meditation — the hour starts straight into the warm-up.
 
-Two blocks are YouTube videos and take their **real** length at runtime, so the hour runs
-**57:00–59:00**. Timing is deliberately nominal, with about ±1½ minutes of slack per
-block; no block is forced onto an exact total.
+The closing meditation is a YouTube video and takes its **real** length at runtime, so the hour
+runs about **55:00–58:00**. Timing is deliberately nominal, with about ±1½ minutes of slack per
+block; no block is forced onto an exact total, and the length is Rodri's call — nothing warns
+about a day being off the hour.
 
-**Music** (lofi girl) plays under the three timed blocks and stops automatically while a
-video block is on, then picks up again.
+**Music** (lofi girl) plays under the timed blocks and stops automatically while a video block
+is on, then picks up again.
+
+### Sun salutations
+
+Eight rounds of ten poses, 5s work / 2s rest each, so one round is exactly **1:10**:
+
+Mountain → Forward Fold → Halfway Lift → Plank → Lower Down → Cobra → Downward Dog →
+Step Forward and Flat Back → Forward Fold → Stand Tall, arms up.
+
+No opening setup and no closing stillness: the warm-up and the Settle block already bracket the
+day. Rodri replaced the follow-along class with this sequence on 2026-10-02 — the timing came from
+the class's own caption track (eight rounds, ~50s each).
 
 ## Seeing the moves
 
 The menu is deliberately short: the day cards (focus, main routine, total), **Today's hour**
-(one row per block with its length), the pool/music/sun-class summary, and the buttons. It no
+(one row per block with its length), the pool/music/salutations summary, and the buttons. It no
 longer lists the moves — Rodri asked for the list to go once the editor existed. Moves are
 visible in **✎ Edit routines**, and the run screen shows each one as it comes up.
 
@@ -49,9 +62,9 @@ gong and a three-strike chime.
 
 ## Files
 
-- `pool.json` — the move pool: 55 home bodyweight moves tagged by pattern, body position,
-  impact and level. 45 come from real Darebee cards; the rest are standard stretches.
-- `routines.json` — the seven days, the shared sun class, the music bed, block lengths.
+- `pool.json` — the move pool: 63 moves tagged by pattern, body position, impact and level.
+  45 come from real Darebee cards; the rest are standard stretches plus the ten sun-salutation poses.
+- `routines.json` — the seven days, the shared blocks, the music bed, block lengths, transitions.
 - `build_site.py` — joins them, prints the block-length table, writes `docs/index.html`.
 - `.github/workflows/deploy.yml` — builds and deploys to GitHub Pages on every push.
 
@@ -77,7 +90,7 @@ can be retuned from it:
 📋 **Monday review — 2026-09-28**
 Overall ★★★☆☆ (3/5)
 Arrive: 2 · WarmUp: 4 · Sun: 1 · Main: 5 · CoolDown: 3 · Settle: 4
-_liked the circuit, sun class too fast_
+_liked the circuit, salutations too fast_
 ```
 
 Reviews are also kept in the browser's localStorage (device-local); **Reviews** on the menu
@@ -93,19 +106,20 @@ What you can do per day: change any move's **work and rest seconds**, **add or r
 (a picker over the whole pool, plus inventing a new move with its own cue), **reorder** them
 (↑ ↓), **change the number of rounds** and the rest between rounds, **add a section** (an extra
 circuit named what you like, with its own rounds and moves), and **take a section out** of a day
-— including the warm-up, the sun class, the cool-down and the closing meditation.
+— including the warm-up, the sun salutations, the cool-down and the closing meditation.
 
 Notes on the model:
 
-- **Warm-up, the sun class, the cool-down and the closing meditation are shared by every day.**
+- **Warm-up, the sun salutations, the cool-down and the closing meditation are shared by every day.**
   Editing them changes all seven days; the editor tags them *every day*. Only `main` and the
   extra sections belong to a single day (*this day*).
 - A day can carry `skip: ["sun", "cooldown"]` (any of `warmup`, `sun`, `cooldown`, `settle`)
   and `extra: [{label, rounds, rest_between_rounds, moves: [...]}]`, inserted after the main
-  circuit. A 15s transition only happens when the block it bridges is present.
+  circuit. The pauses between blocks live in `transitions` (30s after the warm-up, 15s after the
+  salutations, 15s before the cool-down) and only happen when the blocks they bridge are present.
 - A section with no moves is dropped on save — it does nothing.
-- Timing stays nominal: the editor prints each day's total and warns when a day drifts more
-  than 7 minutes from an hour. Nothing is forced onto an exact 60:00.
+- Timing stays nominal: the editor prints each day's total. Length is Rodri's to decide, so nothing
+  warns about a day being off the hour.
 
 Saving needs a write token, and it is the only credential anywhere in this setup:
 
@@ -141,8 +155,15 @@ build catch up, usually under a minute.
 
 ## Changing things by hand
 
-- **Swap a meditation or the sun class:** change the `video` ID in `routines.json`
-  (`settle` and `sun` are shared all week). Durations are measured at runtime.
+- **Swap the meditation:** change `settle.video` in `routines.json`. Durations are measured at
+  runtime.
+- **Bring the sun salutation class back, or point it at another video:** put `video`, `title` and
+  `channel` back into `sun` and drop its `moves` — the builder runs the sun block as either a
+  written circuit or a follow-along video, whichever the data says. The old class (Charlie Follows,
+  `I9_wJmIAckA`) and three alternates are in the git history.
+- **Change the salutations:** `sun.moves` (the ten poses, in order) and `sun.rounds` — or just use
+  the editor.
+- **Change a pause:** `transitions.after_warmup`, `after_sun`, `before_cooldown`, in seconds.
 - **Swap the music:** change `music.video`.
 - **Change a main routine:** edit that day's `main.moves` (a `ref` into `pool.json` plus
   `work`/`rest` seconds) and `rounds`.
@@ -154,5 +175,7 @@ build catch up, usually under a minute.
 ## Attribution
 
 Routine structures and exercise names come from [DAREBEE](https://darebee.com), a free
-donation-funded project. Cue text here is our own. Scraped source pages are kept in
-`.scratch/`, which is gitignored and never published.
+donation-funded project. Cue text here is our own. The sun-salutation sequence was written from
+the timing of a follow-along class, but the move list and cues here are ours — the class's caption
+track was used as a measurement only and is not published (it lives outside the repo). Scraped
+source pages are kept in `.scratch/`, which is gitignored and never published.
