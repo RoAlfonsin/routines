@@ -22,6 +22,19 @@ OUTDIR = HERE / "docs"
 
 POOL = json.loads((HERE / "pool.json").read_text(encoding="utf-8"))
 R = json.loads((HERE / "routines.json").read_text(encoding="utf-8"))
+AUDIODIR = HERE / "audio"
+
+
+def audio_manifest():
+    """The baked narration, if it has been generated. make_audio.py owns this file."""
+    path = AUDIODIR / "manifest.json"
+    if not path.exists():
+        return {"clips": {}}
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        print(f"narration manifest unreadable ({e}) — the page will use the device voice")
+        return {"clips": {}}
 
 HOUR = R["hour_seconds"]
 TAIL = R["video_tail"]
@@ -110,10 +123,20 @@ def build():
         "thread": REVIEW_THREAD,
         "repo": "RoAlfonsin/routines",
         "branch": "main",
+        "audio": audio_manifest(),
     }
     payload = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
 
     OUTDIR.mkdir(exist_ok=True)
+    # The baked narration lives in audio/ (tracked); Pages only serves docs/, so copy it in.
+    if AUDIODIR.is_dir():
+        dest = OUTDIR / "audio"
+        dest.mkdir(exist_ok=True)
+        n = 0
+        for f in sorted(AUDIODIR.glob("*.mp3")):
+            shutil.copy2(f, dest / f.name)
+            n += 1
+        print(f"copied {n} narration clips into {dest}")
     html = TEMPLATE.replace("__DATA__", payload)
     path = OUTDIR / "index.html"
     path.write_text(html, encoding="utf-8")
@@ -281,7 +304,7 @@ TEMPLATE = r"""<!DOCTYPE html>
     </div>
     <div class="foot">
       <button class="primary" id="startBtn">Start</button>
-      <label class="tog"><input type="checkbox" id="voiceTog"> spoken move names</label>
+      <label class="tog"><input type="checkbox" id="voiceTog" checked> spoken narration</label>
       <label class="tog"><input type="checkbox" id="musicTog" checked> music between videos</label>
       <button id="histBtn">Reviews</button>
       <button id="editBtn">✎ Edit routines</button>
@@ -414,9 +437,42 @@ function gong(){ strike(BOWL_LOW,0.20,6); setTimeout(()=>strike(BOWL_LOW*1.5,0.1
 function chime3(){ strike(BOWL_HIGH,0.18,5); setTimeout(()=>strike(BOWL_MID,0.16,5),600);
                    setTimeout(()=>strike(BOWL_LOW,0.18,7),1250); }
 
-let voiceEnabled=false;
-function say(t){ if(!voiceEnabled||!("speechSynthesis" in window)||!t) return;
+let voiceEnabled=true;   /* narration is baked audio now: natural, and identical on every device */
+/* Baked narration: audio/manifest.json maps the exact spoken string to an MP3. Anything
+   without a clip (a move invented in the editor, say) falls back to the device's own voice. */
+const AUDIO = DATA.audio || {}, AUDIOSET = AUDIO.clips || {};
+const clipCache = {};
+const spokenText = s => (s.kind==="yoga" || s.video) ? s.label : (s.label + ". " + (s.cue || "")).trim();
+function clipFor(s){
+  if(!s || s.kind==="rest") return null;
+  const f = AUDIOSET[spokenText(s)];
+  return f ? "audio/" + f : null;
+}
+function clipEl(src){
+  if(!clipCache[src]){ const a=new Audio(src); a.preload="auto"; clipCache[src]=a; }
+  return clipCache[src];
+}
+function deviceVoice(t){ if(!("speechSynthesis" in window) || !t) return;
   try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(t); u.rate=1.04; speechSynthesis.speak(u);}catch(e){} }
+/* Speak one step: the clip when we have one, otherwise the system voice. */
+function speakStep(s){
+  if(!voiceEnabled || !s || s.kind==="rest") return;
+  const src = clipFor(s);
+  if(src){
+    try{
+      const a = clipEl(src);
+      a.currentTime = 0;
+      const p = a.play();
+      /* autoplay refused before any interaction → say it with the system voice instead */
+      if(p && p.catch) p.catch(()=>deviceVoice(spokenText(s)));
+      return;
+    }catch(e){}
+  }
+  deviceVoice(spokenText(s));
+}
+/* Pull the next clip in while the current one plays, so the flow never waits on the network. */
+function preloadStep(s){ const src = clipFor(s); if(src) clipEl(src); }
+function say(t){ if(!voiceEnabled||!t) return; deviceVoice(t); }
 
 /* ================= youtube: 2 content blocks + a music bed ================= */
 let ytReady=false, pMain=null, pMusic=null;
@@ -715,7 +771,8 @@ function enter(first){
     else if(s.kind==="yoga") strike(BOWL_MID,0.12,3);   /* pose changes in the flow */
     else strike(BOWL_LOW,0.13,4);
   } else strike(BOWL_LOW,0.11,3);
-  say(s.kind==="rest" ? "" : s.label);
+  speakStep(s);
+  preloadStep(st.steps[st.i+1]);
   paintBar();
 }
 function startVideo(which, day, s){
