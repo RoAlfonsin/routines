@@ -342,11 +342,6 @@
         "rest_between_rounds": 45,
         "moves": [
           {
-            "ref": "side-bicep-extensions",
-            "work": 40,
-            "rest": 15
-          },
-          {
             "ref": "bicep-extensions",
             "work": 40,
             "rest": 15
@@ -357,27 +352,17 @@
             "rest": 15
           },
           {
+            "ref": "reverse-angels",
+            "work": 40,
+            "rest": 15
+          },
+          {
             "ref": "plank-rotations",
             "work": 40,
             "rest": 15
           },
           {
             "ref": "superman-stretches",
-            "work": 40,
-            "rest": 15
-          },
-          {
-            "ref": "reverse-angels",
-            "work": 40,
-            "rest": 15
-          },
-          {
-            "ref": "prone-reverse-flys",
-            "work": 40,
-            "rest": 15
-          },
-          {
-            "ref": "w-extensions",
             "work": 40,
             "rest": 15
           }
@@ -519,5 +504,5 @@
   ],
   "timing_margin_seconds": 90,
   "video_tail": 5,
-  "updated": "2026-10-03T03:06:02.229Z"
+  "updated": "2026-10-03T03:07:04.262Z"
 }
