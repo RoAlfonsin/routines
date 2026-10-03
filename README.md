@@ -20,8 +20,21 @@ runs about **55:00–58:00**. Timing is deliberately nominal, with about ±1½ m
 block; no block is forced onto an exact total, and the length is Rodri's call — nothing warns
 about a day being off the hour.
 
-**Music** (lofi girl) plays under the timed blocks and stops automatically while a video block
-is on, then picks up again.
+**Music** runs under the timed blocks and stops while a video block is on, then picks up again.
+There are **two Lofi Girl beds**, both 24/7 live streams:
+
+- **lofi house radio** (`3PFJ9SETS4M`) — warm-up, main circuit, cool-down.
+- **lofi sleep/chill radio** (`JD-kMIpDfnY`) — the sun salutations, which move too slowly for the
+  house tempo. The swap happens during the 30s pause before the salutations, so you never hear it
+  cut over a pose.
+
+Both beds are separate players; only the one in use plays. The volume slider, the play/pause button
+and the menu's music row all follow whichever bed is sounding.
+
+**Caveat on live streams:** Lofi Girl rotates and retires their stream IDs, so a dead one shows a
+black frame with no sound rather than an error. Check with
+`yt-dlp --skip-download --print "%(is_live)s" <id>`, or list what is live right now with
+`yt-dlp --flat-playlist --print "%(id)s|%(title)s" https://www.youtube.com/@LofiGirl/streams`.
 
 ### Sun salutations
 
@@ -199,7 +212,8 @@ build catch up, usually under a minute.
 - **Change the salutations:** `sun.moves` (the ten poses, in order) and `sun.rounds` — or just use
   the editor.
 - **Change a pause:** `transitions.after_warmup`, `after_sun`, `before_cooldown`, in seconds.
-- **Swap the music:** change `music.video`.
+- **Swap the music:** change `music.video` (the bed for the warm-up, main and cool-down) or
+  `music.beds.sun.video` (the salutations). Both must be *live* streams.
 - **Change a main routine:** edit that day's `main.moves` (a `ref` into `pool.json` plus
   `work`/`rest` seconds) and `rounds`.
 - **Add a move:** append to `pool.json` with a unique `id`, then reference it by `ref`.
