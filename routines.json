@@ -10,27 +10,27 @@
     "moves": [
       {
         "ref": "sun-mountain",
-        "work": 9,
+        "work": 8,
+        "rest": 0
+      },
+      {
+        "ref": "sun-stand-tall",
+        "work": 4,
         "rest": 0
       },
       {
         "ref": "sun-forward-fold",
-        "work": 5,
+        "work": 4,
         "rest": 0
       },
       {
         "ref": "sun-halfway-lift",
-        "work": 6,
+        "work": 4,
         "rest": 0
       },
       {
         "ref": "sun-plank",
-        "work": 5,
-        "rest": 0
-      },
-      {
-        "ref": "sun-lower-down",
-        "work": 9,
+        "work": 8,
         "rest": 0
       },
       {
@@ -40,22 +40,22 @@
       },
       {
         "ref": "sun-downward-dog",
-        "work": 8,
+        "work": 10,
         "rest": 0
       },
       {
         "ref": "sun-step-forward",
-        "work": 6,
+        "work": 4,
         "rest": 0
       },
       {
         "ref": "sun-forward-fold",
-        "work": 5,
+        "work": 4,
         "rest": 0
       },
       {
         "ref": "sun-stand-tall",
-        "work": 9,
+        "work": 4,
         "rest": 0
       }
     ],
@@ -499,5 +499,5 @@
   ],
   "timing_margin_seconds": 90,
   "video_tail": 5,
-  "updated": "2026-10-03T03:11:34.000Z"
+  "updated": "2026-10-05T20:30:25.554Z"
 }
