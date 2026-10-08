@@ -15,17 +15,17 @@
       },
       {
         "ref": "sun-stand-tall",
-        "work": 4,
+        "work": 5,
         "rest": 0
       },
       {
         "ref": "sun-forward-fold",
-        "work": 4,
+        "work": 5,
         "rest": 0
       },
       {
         "ref": "sun-halfway-lift",
-        "work": 4,
+        "work": 5,
         "rest": 0
       },
       {
@@ -35,12 +35,12 @@
       },
       {
         "ref": "sun-cobra",
-        "work": 8,
+        "work": 6,
         "rest": 0
       },
       {
         "ref": "sun-downward-dog",
-        "work": 10,
+        "work": 8,
         "rest": 0
       },
       {
@@ -499,5 +499,5 @@
   ],
   "timing_margin_seconds": 90,
   "video_tail": 5,
-  "updated": "2026-10-05T20:30:25.554Z"
+  "updated": "2026-10-08T21:18:22.188Z"
 }
